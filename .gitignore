@@ -1,0 +1,30 @@
+# CMake / MSVC 构建产物
+build/
+cmake-build-*/
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+x64/
+[Dd]ebug/
+[Rr]elease/
+[Rr]elWithDebInfo/
+[Mm]inSizeRel/
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.idb
+*.ipdb
+*.iobj
+*.tlog
+*.lastbuildstate
+*.recipe
+
+# IDE
+.idea/
+*.swp
+*~

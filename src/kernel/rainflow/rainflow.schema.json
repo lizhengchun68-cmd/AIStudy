@@ -1,0 +1,10 @@
+{
+  "title": "RainflowCounting",
+  "input": {
+    "properties": {
+      "load_history": {"type": "array", "items": {"type": "number"}},
+      "method": {"enum": ["ThreePoint", "FourPoint"]},
+      "params": { "properties": { "threshold": {"type": "number"} } }
+    }
+  }
+}
