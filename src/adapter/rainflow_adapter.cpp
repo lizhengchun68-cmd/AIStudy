@@ -135,6 +135,53 @@ std::string rainflow_adapter(const std::string& payload_json_str) {
     }
 }
 
+std::string rainflow_schema() {
+    return R"({
+        "title": "RainflowCounting",
+        "description": "雨流计数法，计算载荷谱的应力幅值和均值分布",
+        "input": {
+            "type": "object",
+            "properties": {
+                "load_history": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "description": "载荷时间历程序列"
+                },
+                "method": {
+                    "type": "string",
+                    "enum": ["ThreePoint", "FourPoint", "ModifiedFourPoint"],
+                    "description": "雨流计数算法"
+                },
+                "params": {
+                    "type": "object",
+                    "properties": {
+                        "threshold": { "type": "number", "default": 0.0 },
+                        "grads": { "type": "integer", "default": 100, "minimum": 1 }
+                    }
+                }
+            },
+            "required": ["load_history", "method"]
+        },
+        "output": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "amplitude": { "type": "number" },
+                            "mean": { "type": "number" },
+                            "count": { "type": "integer" }
+                        }
+                    }
+                },
+                "num_cycles": { "type": "integer" }
+            }
+        }
+    })";
+}
+
 } // namespace rainflow
 } // namespace adapter
 } // namespace AIstudy

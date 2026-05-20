@@ -10,8 +10,8 @@
 namespace AIstudy {
 namespace scheduler {
 
-void Dispatcher::registerAdapter(const std::string& task_type, AdapterFunc func) {
-    registry_[task_type] = func;
+void Dispatcher::registerAdapter(const std::string& task_type, AdapterFunc func, const std::string& schema) {
+    registry_[task_type] = {func, schema};
 }
 
 std::string Dispatcher::makeErrorResponse(const std::string& msg) const {
@@ -48,7 +48,7 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
         Poco::JSON::Stringifier::condense(payload_obj, payload_oss);
         const std::string payload_str = payload_oss.str();
 
-        return it->second(payload_str);
+        return it->second.func(payload_str);
 
     } catch (const Poco::Exception& e) {
         return makeErrorResponse(std::string("JSON parse error: ") + e.what());
@@ -59,10 +59,15 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
 
 std::vector<std::string> Dispatcher::listTaskTypes() const {
     std::vector<std::string> types;
-    for (const auto& pair : registry_) {
-        types.push_back(pair.first);
-    }
+    for (const auto& pair : registry_) types.push_back(pair.first);
     return types;
+}
+
+std::string Dispatcher::getSchema(const std::string& task_type) const {
+    auto it = registry_.find(task_type);
+    if (it == registry_.end())
+        return makeErrorResponse("Unknown task_type: " + task_type);
+    return it->second.schema.empty() ? "{}" : it->second.schema;
 }
 
 } // namespace scheduler
