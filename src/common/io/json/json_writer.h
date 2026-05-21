@@ -56,7 +56,7 @@ public:
     void setPrettyPrint(bool enable);
     void setIndent(int spaces);
 
-    /** @brief Buffer size for writeFile (default 8K). §4 大文件缓冲 */
+    /** @brief Buffer size for writeFile (default 8K). §4 大文件缓�?*/
     void setBufferSize(std::size_t n) { bufferSize_ = n; }
     std::size_t getBufferSize() const { return bufferSize_; }
 

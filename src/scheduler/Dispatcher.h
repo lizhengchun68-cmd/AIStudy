@@ -10,13 +10,13 @@
 namespace AIstudy {
 namespace scheduler {
 
-/** @brief Skill 执行结果：成功时为写入 API `result` 字段的 JSON 对象 */
+/** @brief Skill 执行结果：成功时为写�?API `result` 字段�?JSON 对象 */
 using SkillResultJson = Poco::JSON::Object::Ptr;
 
 /**
- * @brief Skill 适配器：payload JSON 字符串 → StatusOr<result 对象>
+ * @brief Skill 适配器：payload JSON 字符�?�?StatusOr<result 对象>
  *
- * 不在此层生成 success/error 信封；由 Dispatcher::execute 统一调用 makeSkillApiResponse。
+ * 不在此层生成 API 信封；由 Dispatcher::execute 统一调用 makeSkillApiResponse�?
  */
 using SkillExecuteFunc = StatusOr<SkillResultJson> (*)(const std::string& payload_json);
 
@@ -24,10 +24,10 @@ class Dispatcher {
 public:
     void registerSkill(const SkillManifest& manifest, SkillExecuteFunc func);
 
-    /** @brief 解析调度信封，校验 payload，调用 Skill，序列化为 API JSON */
+    /** @brief 解析调度信封，校�?payload，调�?Skill，序列化为协�?v1 JSON */
     std::string execute(const std::string& envelope_json);
 
-    /** @brief 列出已注册 Skill 摘要 */
+    /** @brief 列出已注�?Skill 摘要 */
     std::string listSkillsJson() const;
 
     /** @brief 返回 manifest 描述 JSON */
@@ -42,9 +42,6 @@ private:
     std::unordered_map<std::string, SkillEntry> registry_;
 
     const SkillEntry* findSkill(const std::string& skill_id) const;
-    std::string makeProtocolV1EnvelopeError(const std::string& request_id,
-                                            const ErrorCodeWrapper& error,
-                                            const std::string& messageOverride = "") const;
 };
 
 } // namespace scheduler

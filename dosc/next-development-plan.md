@@ -1,6 +1,6 @@
 # AIStudy 下一步开发计划
 
-> 文档版本：1.0  
+> 文档版本：1.3  
 > 日期：2026-05-21  
 > 依据：`dosc/agent-skill-architecture-roadmap.md`、`dosc/skill-protocol-v1.md`、当前仓库代码快照  
 > 性质：**规划文档**，不包含实现任务的具体 PR/分支安排  
@@ -30,7 +30,7 @@
 | 唯一示例 Skill | `rainflow`（`kernel` + `adapter` + `skills/rainflow/manifest.json`） |
 | 协议 v1 文档 | `dosc/skill-protocol-v1.md`（规范态，无遗留格式） |
 | 调度入口 | `Dispatcher::execute`、`registerSkill`、`skill_registry` 静态表 |
-| 信封解析 | `skill_protocol`（`skill_id`、`payload`、`protocol` 可选识别） |
+| 信封解析 | `skill_protocol`（必填 `protocol: "1"`、`skill_id`、`payload`） |
 | 调度前校验 | `skill_payload_validator`（manifest `required` 字段） |
 | 统一错误模型 | `StatusOr` + `api_response`（v1 `ok`/`error`/`meta`） |
 | 发现能力 | CLI：`AIstudy --list`、`--describe <skill_id>`、stdin `execute` |
@@ -40,8 +40,8 @@
 
 | 项 | 规范/目标 | 代码现状 | 风险 |
 |----|-----------|----------|------|
-| 仅 protocol v1 | `skill-protocol-v1.md` 要求 `protocol: "1"` 必填 | `protocol` 可省略；省略时响应仍为 `{ "success": ... }` | Agent 与 Host 契约分裂 |
-| 信封字段 | 仅 `skill_id` | 已移除 `task_type` 注册路径；解析层也不再兼容 `task_type` | 与旧路线图 §2.2 描述不一致（文档待同步） |
+| 仅 protocol v1 | `skill-protocol-v1.md` 要求 `protocol: "1"` 必填 | `parseSkillEnvelope` 强制 `protocol == "1"`；响应仅 `ok`/`meta` | ✅ 已收敛 |
+| 信封字段 | 仅 `skill_id` | 已移除 `task_type`；解析层仅认 `skill_id` | 路线图 v1.4 已同步 |
 | JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | 仅 `required` 存在性 | 类型/enum 错误仍在 adapter 才暴露 |
 | 契约测试 | 每 Skill `tests/*.json` | **无** `tests/` 目录 | 回归靠手工 |
 | 结构化日志 | `request_id` + `skill_id` + `duration_ms` | scheduler **未** 调用 `common/logger` | 难排查生产问题 |
@@ -53,10 +53,9 @@
 
 ### 2.3 技术债（建议纳入近期清理）
 
-- `api_response` 仍保留 `makeApiSuccessResponse` / `success` 等遗留 API，与 `makeSkillApiResponse` 双轨。
-- `src/kernel/rainflow/rainflow.schema.json` 与 `skills/rainflow/manifest.json` 可能双份维护。
-- 仓库内仍存在 `src/common/common_status` 与 `src/common/status` 并行路径（历史别名），增加认知成本。
-- `agent-skill-architecture-roadmap.md` §2.2、§3.1 仍描述 `task_type`、`rainflow_schema()`、`registerAdapter` 等已删除/已变更内容，**需单独修订路线图**，避免与本文档、协议 v1 冲突。
+- ~~`api_response` 遗留 `success` 双轨~~ → 已收敛为 `makeSkillApiResponse` / `makeSkillApiFailureResponse`。
+- ~~`rainflow.schema.json` 双份维护~~ → 已删除，契约仅以 `skills/rainflow/manifest.json` 为准。
+- ~~`common/status` 与 `common/common_status` 双路径~~ → 目录统一为 `src/common/status`，`#include "common/status/..."`（CMake 目标名 `common_status`）。
 
 ---
 
@@ -102,10 +101,11 @@ flowchart LR
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| 强制 `protocol == "1"` | 修改 `parseSkillEnvelope`：无 protocol 或版本不对 → 校验错误 | 发送无 `protocol` 的信封得到 v1 格式 `ok: false` |
-| 统一响应路径 | `Dispatcher::execute` 始终 `makeProtocolV1*`；移除 `makeApiFailureResponse`/`success` 分支 | 成功/失败响应均含 `protocol`、`request_id`、`ok`、`meta` |
-| 清理遗留 API | 评估删除或内部化 `makeApiSuccessResponse`、`makeApiResponse`（若无其它调用方） | 全仓库无 `success` 响应字段 |
-| 同步路线图 | 更新 `agent-skill-architecture-roadmap.md` §2.2、§3.1、附录 | 文档与代码一致 |
+| 强制 `protocol == "1"` | 修改 `parseSkillEnvelope`：无 protocol 或版本不对 → 校验错误 | ✅ 已实现 |
+| 统一响应路径 | `Dispatcher::execute` 仅 `makeSkillApiResponse` / `makeSkillApiFailureResponse` | ✅ 已实现 |
+| 清理遗留 API | 删除 `makeApiSuccessResponse`、`makeApiResponse`、`success` 字段 | ✅ 已实现 |
+| 同步路线图 | 更新 `agent-skill-architecture-roadmap.md` §2.2、§3.1、附录 | ✅ 路线图 v1.4 |
+| 统一 status 模块路径 | `src/common/status`，include `common/status/...` | ✅ 已实现 |
 
 **依赖：** 无。  
 **工作量：** 小（1 个迭代内可完成）。
@@ -121,7 +121,7 @@ flowchart LR
 | rainflow 契约测试 | `skills/rainflow/tests/`：`request.json` + `expected_ok.json` / `expected_error.json` | CI 或本地脚本对比 `execute` 输出（可允许 `request_id` 字段忽略） |
 | 加强 payload 校验 | 在 `skill_payload_validator` 或 `common/io/json` 上增加：类型、enum、`minimum` 等（可先子集 JSON Schema） | manifest 中 `method` 非法 enum 在调度层失败，错误 `category=validation` |
 | manifest 加载失败可观测 | `registerBuiltinSkills`：失败时日志/启动警告；可选 `--list` 显示 `load_error` | manifest 路径错误时 `--list` 可见异常 |
-| 删除重复 schema 源 | 移除或标记废弃 `kernel/rainflow/rainflow.schema.json`，以 manifest 为唯一契约 | 仅 `skills/rainflow/manifest.json` 为 Agent 输入 |
+| 删除重复 schema 源 | 以 manifest 为唯一契约 | ✅ 已删除 `rainflow.schema.json` |
 
 **依赖：** M1（测试断言基于 v1 响应）。  
 **工作量：** 中。
@@ -213,9 +213,8 @@ flowchart LR
 
 ### 迭代 1（当前冲刺）：可信 Host
 
-1. **M1** 协议与实现收敛（全 v1 响应、必填 `protocol`）  
-2. **M2** rainflow golden 测试 + manifest 加载失败告警  
-3. 修订 `agent-skill-architecture-roadmap.md` 过时章节  
+1. **M2** rainflow golden 测试 + manifest 加载失败告警  
+2. **M3** 结构化日志 + `--health`（M1 协议/API/common_status 路径已收敛）  
 
 **迭代 1 验收：** 外部 Agent 仅读 `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe`，即可完成成功/失败调用；CI 跑通 rainflow 契约测试。
 
@@ -287,6 +286,9 @@ flowchart LR
 | 版本 | 日期 | 说明 |
 |------|------|------|
 | 1.0 | 2026-05-21 | 基于路线图 v1.3 与当前代码差距分析，制定 M1–M7 与三迭代计划 |
+| 1.1 | 2026-05-21 | 路线图 v1.4 同步；M1 协议/API 收敛 |
+| 1.2 | 2026-05-21 | `rainflow.schema.json` 移除；manifest 为唯一 schema |
+| 1.3 | 2026-05-21 | 模块路径统一为 `src/common/status` |
 
 ---
 

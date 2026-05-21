@@ -40,7 +40,7 @@ public:
     template <typename T>
     StatusOr<T> getValue(const std::string& path) const;
 
-    /** @brief Like getValue<T> but key missing or null → default; type mismatch still throws. */
+    /** @brief Like getValue<T> but key missing or null �?default; type mismatch still throws. */
     template <typename T>
     T getValue(const std::string& path, const T& defaultVal) const;
 
@@ -64,7 +64,7 @@ public:
     template <typename T>
     StatusOr<std::unordered_map<std::string, T>> getUnorderedMap(const std::string& path) const;
 
-    /** @brief Optional value: missing or null → Ok(Nullable{}); type mismatch → Fail. Uses Poco::Nullable (optional-like). */
+    /** @brief Optional value: missing or null �?Ok(Nullable{}); type mismatch �?Fail. Uses Poco::Nullable (optional-like). */
     template <typename T>
     StatusOr<Poco::Nullable<T>> getValueOptional(const std::string& path) const;
 
@@ -77,7 +77,7 @@ public:
 
     bool isLoaded() const;
 
-    /** @brief Buffer size for readFile (default 8K). §4 大文件缓冲 */
+    /** @brief Buffer size for readFile (default 8K). §4 大文件缓�?*/
     void setBufferSize(std::size_t n) { bufferSize_ = n; }
     std::size_t getBufferSize() const { return bufferSize_; }
     /** @brief Last parse error message (Poco detail, possibly line/col). Cleared on success. */

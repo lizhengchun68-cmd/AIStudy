@@ -8,7 +8,7 @@
 namespace AIstudy {
 namespace scheduler {
 
-/** @brief 按 manifest.input_schema.required 校验 payload 顶层字段 */
+/** @brief �?manifest.input_schema.required 校验 payload 顶层字段 */
 StatusOr<bool> validatePayloadAgainstManifest(const Poco::JSON::Object::Ptr& payload,
                                                 const SkillManifest& manifest);
 

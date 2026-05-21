@@ -1,4 +1,4 @@
-# common/status：错误码与 StatusOr（对外目标名 common_status）
+# common/status：错误码、StatusOr、协议 v1 API 响应（CMake 目标名 common_status）
 
 set(COMMON_STATUS_SOURCES
     api_response.cpp

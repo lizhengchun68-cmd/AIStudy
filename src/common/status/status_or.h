@@ -1,6 +1,6 @@
 /**
  * @file status_or.h
- * @brief StatusOr<T>: value-or-error type for APIs that may fail (ERROR_CODE §六)
+ * @brief StatusOr<T>: value-or-error type for APIs that may fail (ERROR_CODE §�?
  */
 
 #ifndef AISTUDY_STATUS_STATUS_OR_H
@@ -25,7 +25,7 @@ struct status_or_traits {
  * @brief Holds either a value T or an ErrorCodeWrapper; mutually exclusive.
  * @tparam T Value type when ok(). Must be copyable or movable.
  *
- * Conventions (ERROR_CODE §六):
+ * Conventions (ERROR_CODE §�?:
  * - ok() == true: holds value; value(), operator*, operator-> safe.
  * - ok() == false: holds status; value(), operator*, operator-> throw SimUtilsException.
  * - No default constructor.
@@ -238,7 +238,7 @@ private:
     };
 };
 
-/** @brief Stream StatusOr: [OK] or [FAIL] code message (ERROR_CODE §六). */
+/** @brief Stream StatusOr: [OK] or [FAIL] code message (ERROR_CODE §�?. */
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const StatusOr<T>& r) {
     if (r.ok())

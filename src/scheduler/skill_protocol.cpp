@@ -27,18 +27,18 @@ StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json) {
                                   ErrorCategory::VALIDATION));
         }
 
-        SkillEnvelope out;
-        if (envelope->has("protocol")
-            && envelope->getValue<std::string>("protocol") == "1") {
-            out.protocol_v1 = true;
+        if (!envelope->has("protocol")
+            || envelope->getValue<std::string>("protocol") != "1") {
+            return StatusOr<SkillEnvelope>::Fail(
+                ErrorCodeWrapper(static_cast<int>(ValidationError::INVALID_INPUT),
+                                  ErrorCategory::VALIDATION));
         }
 
+        SkillEnvelope out;
         if (envelope->has("request_id")) {
             out.request_id = envelope->getValue<std::string>("request_id");
         }
-        if (out.protocol_v1) {
-            out.request_id = ensureRequestId(out.request_id);
-        }
+        out.request_id = ensureRequestId(out.request_id);
 
         if (envelope->has("skill_id")) {
             out.skill_id = envelope->getValue<std::string>("skill_id");

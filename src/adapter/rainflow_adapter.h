@@ -10,9 +10,9 @@ namespace adapter {
 namespace rainflow {
 
 /**
- * @brief 雨流 Skill：payload JSON → StatusOr<result 对象>
+ * @brief 雨流 Skill：payload JSON �?StatusOr<result 对象>
  *
- * 仅含业务 result（items、num_cycles 等）；API 信封由 scheduler 通过 makeApiResponse 生成。
+ * 仅含业务 result（items、num_cycles 等）；API 信封�?scheduler 通过 makeSkillApiResponse 生成�?
  */
 StatusOr<Poco::JSON::Object::Ptr> rainflow_execute(const std::string& payload_json_str);
 

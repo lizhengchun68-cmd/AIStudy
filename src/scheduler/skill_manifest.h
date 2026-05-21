@@ -9,7 +9,7 @@
 namespace AIstudy {
 namespace scheduler {
 
-/** @brief Skill Manifest（与 skills/<id>/manifest.json 对应） */
+/** @brief Skill Manifest（与 skills/<id>/manifest.json 对应�?*/
 struct SkillManifest {
     std::string id;
     std::string version = "1.0.0";
@@ -25,7 +25,7 @@ struct SkillManifest {
 
 StatusOr<SkillManifest> loadSkillManifest(const std::string& manifest_path);
 
-/** @brief 将 manifest 序列化为 describe 用 JSON 对象 */
+/** @brief �?manifest 序列化为 describe �?JSON 对象 */
 Poco::JSON::Object::Ptr skillManifestToJson(const SkillManifest& manifest);
 
 } // namespace scheduler

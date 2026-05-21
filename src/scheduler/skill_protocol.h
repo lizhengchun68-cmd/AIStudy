@@ -8,9 +8,8 @@
 namespace AIstudy {
 namespace scheduler {
 
-/** @brief 解析后的调度信封（遗留 task_type 或 protocol v1 skill_id） */
+/** @brief 解析后的协议 v1 调度信封 */
 struct SkillEnvelope {
-    bool protocol_v1 = false;
     std::string request_id;
     std::string skill_id;
     std::string skill_version;
@@ -19,7 +18,7 @@ struct SkillEnvelope {
 
 StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json);
 
-/** @brief 若 request_id 为空则生成 UUID 字符串 */
+/** @brief �?request_id 为空则生�?UUID 字符�?*/
 std::string ensureRequestId(const std::string& request_id);
 
 } // namespace scheduler

@@ -29,21 +29,10 @@ const Dispatcher::SkillEntry* Dispatcher::findSkill(const std::string& skill_id)
     return &it->second;
 }
 
-std::string Dispatcher::makeProtocolV1EnvelopeError(const std::string& request_id,
-                                                    const ErrorCodeWrapper& error,
-                                                    const std::string& messageOverride) const {
-    ApiResponseMeta meta;
-    return makeProtocolV1FailureResponse(error, request_id, meta, messageOverride);
-}
-
 std::string Dispatcher::execute(const std::string& envelope_json) {
     const auto envelopeRes = parseSkillEnvelope(envelope_json);
     if (!envelopeRes.ok()) {
-        if (envelope_json.find("\"protocol\"") != std::string::npos
-            && envelope_json.find("\"1\"") != std::string::npos) {
-            return makeProtocolV1EnvelopeError("", envelopeRes.status());
-        }
-        return makeApiFailureResponse(envelopeRes.status());
+        return makeSkillApiFailureResponse(envelopeRes.status(), "", ApiResponseMeta{});
     }
 
     const SkillEnvelope& envelope = envelopeRes.value();
@@ -51,34 +40,26 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
     if (!entry) {
         const ErrorCodeWrapper err(static_cast<int>(SystemError::UNKNOWN_ERROR),
                                    ErrorCategory::SYSTEM);
-        if (envelope.protocol_v1) {
-            return makeProtocolV1EnvelopeError(
-                envelope.request_id, err, "Unknown skill_id: " + envelope.skill_id);
-        }
-        return makeApiFailureResponse(err, "Unknown skill_id: " + envelope.skill_id);
+        return makeSkillApiFailureResponse(
+            err, envelope.request_id, ApiResponseMeta{},
+            "Unknown skill_id: " + envelope.skill_id);
     }
+
+    ApiResponseMeta meta;
+    meta.skill_id = envelope.skill_id;
+    meta.skill_version = entry->manifest.version;
 
     if (!envelope.skill_version.empty()
         && envelope.skill_version != entry->manifest.version) {
         const ErrorCodeWrapper err(static_cast<int>(ValidationError::INVALID_INPUT),
                                    ErrorCategory::VALIDATION);
-        if (envelope.protocol_v1) {
-            return makeProtocolV1EnvelopeError(
-                envelope.request_id, err, "skill_version mismatch");
-        }
-        return makeApiFailureResponse(err, "skill_version mismatch");
+        return makeSkillApiFailureResponse(
+            err, envelope.request_id, meta, "skill_version mismatch");
     }
 
     const auto validRes = validatePayloadAgainstManifest(envelope.payload, entry->manifest);
     if (!validRes.ok()) {
-        if (envelope.protocol_v1) {
-            ApiResponseMeta meta;
-            meta.skill_id = envelope.skill_id;
-            meta.skill_version = entry->manifest.version;
-            return makeProtocolV1FailureResponse(
-                validRes.status(), envelope.request_id, meta);
-        }
-        return makeApiFailureResponse(validRes.status());
+        return makeSkillApiFailureResponse(validRes.status(), envelope.request_id, meta);
     }
 
     std::ostringstream payload_oss;
@@ -88,15 +69,10 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
     const auto t0 = std::chrono::steady_clock::now();
     const StatusOr<SkillResultJson> skill_result = entry->func(payload_str);
     const auto t1 = std::chrono::steady_clock::now();
-    const int duration_ms = static_cast<int>(
+    meta.duration_ms = static_cast<int>(
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
 
-    ApiResponseMeta meta;
-    meta.skill_id = envelope.skill_id;
-    meta.skill_version = entry->manifest.version;
-    meta.duration_ms = duration_ms;
-
-    return makeSkillApiResponse(envelope.protocol_v1, skill_result, envelope.request_id, meta);
+    return makeSkillApiResponse(skill_result, envelope.request_id, meta);
 }
 
 std::string Dispatcher::listSkillsJson() const {
