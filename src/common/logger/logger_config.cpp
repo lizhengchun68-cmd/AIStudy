@@ -20,6 +20,8 @@ namespace AIstudy {
 namespace common {
 namespace logger {
 
+using io::json::JsonReader;
+
 namespace {
 
 std::mutex& configMutex() {

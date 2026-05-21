@@ -105,8 +105,9 @@ private:
 };
 
 } // namespace logger
-
-#include "logger_impl.h"   
 } // namespace common
 } // namespace AIstudy
+
+#include "logger_impl.h"
+
 #endif // COMMON_LOGGER_LOGGER_H

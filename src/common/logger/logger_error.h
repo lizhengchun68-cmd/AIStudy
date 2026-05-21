@@ -5,14 +5,13 @@
 #include "common/status/exception/error_code_wrapper.h"
 #include "common/status/exception/error_info.h"
 #include "common/status/status_or.h"
+#include "common/status/exception/exception.h"
 #include <exception>
 #include <string>
 
 namespace AIstudy {
 namespace common {
 namespace logger {
-
-class SimUtilsException;
 
 /**
  * @brief Log ErrorCodeWrapper with unified format (code, category, message)

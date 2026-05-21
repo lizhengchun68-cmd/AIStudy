@@ -12,6 +12,7 @@ target_include_directories(adapter
 target_link_libraries(adapter
     PUBLIC
         common_status
+        common_logger
         kernel
 )
 
