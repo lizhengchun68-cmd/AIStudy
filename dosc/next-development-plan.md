@@ -43,7 +43,7 @@
 | 仅 protocol v1 | `skill-protocol-v1.md` 要求 `protocol: "1"` 必填 | `parseSkillEnvelope` 强制 `protocol == "1"`；响应仅 `ok`/`meta` | ✅ 已收敛 |
 | 信封字段 | 仅 `skill_id` | 已移除 `task_type`；解析层仅认 `skill_id` | 路线图 v1.4 已同步 |
 | JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | 仅 `required` 存在性 | 类型/enum 错误仍在 adapter 才暴露 |
-| 契约测试 | 每 Skill `tests/*.json` | **无** `tests/` 目录 | 回归靠手工 |
+| 契约测试 | 每 Skill `tests/*.json` + GTest | `tests/` + `AISTUDY_BUILD_TESTS`（示例：`skill_protocol_test`） | rainflow golden 用例待补 |
 | 结构化日志 | `request_id` + `skill_id` + `duration_ms` | scheduler **未** 调用 `common/logger` | 难排查生产问题 |
 | `health` | 路线图 §4.4 | 未实现 | 部署/探活缺失 |
 | `context` / `options` | 协议预留 | **未解析** | FEM 多步前需设计 |

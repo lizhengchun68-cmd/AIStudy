@@ -1,5 +1,8 @@
 # CMake / MSVC 构建产物
 build/
+thirdparty/gtest/build/
+thirdparty/gtest/build-release/
+thirdparty/gtest/build-debug/
 cmake-build-*/
 out/
 
