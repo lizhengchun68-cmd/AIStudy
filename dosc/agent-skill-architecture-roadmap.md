@@ -1,6 +1,6 @@
 # AIStudy：从早期 Agent 调度到成熟 Agent + Skill 架构
 
-> 文档版本：1.3  
+> 文档版本：1.4  
 > 适用仓库：`AIStudy`（`src/kernel`、`src/adapter`、`src/scheduler`、`src/common`）  
 > 关联规范：`.cursor/rules/fem-simulation-architecture.mdc`
 
@@ -39,18 +39,19 @@ main.cpp
   ├─ registerBuiltinSkills(Dispatcher)   // skill_registry 读 skills/<id>/manifest.json
   ├─ CLI: --list / --describe <skill_id>
   └─ stdin → Dispatcher::execute(envelope_json)
-        ├─ parseSkillEnvelope（支持 protocol v1 或遗留 task_type）
+        ├─ parseSkillEnvelope（protocol v1：`protocol`、`skill_id`、`payload`）
         ├─ validatePayloadAgainstManifest
         ├─ rainflow_execute(payload_json)   // adapter → StatusOr<result>
-        └─ makeSkillApiResponse（scheduler 统一 success 或 protocol v1 ok/meta）
+        └─ makeProtocolV1* / makeSkillApiResponse（scheduler 统一 `ok` / `error` / `meta`）
               └─ kernel::rainflow::rainflowCounting(...)
 ```
 
-信封示例（遗留调度层）：
+信封示例（协议 v1，详见 `dosc/skill-protocol-v1.md`）：
 
 ```json
 {
-  "task_type": "rainflow",
+  "protocol": "1",
+  "skill_id": "rainflow",
   "payload": {
     "load_history": [1.0, 2.0, 3.0, 2.0, 1.0],
     "method": "ThreePoint",
@@ -59,14 +60,21 @@ main.cpp
 }
 ```
 
-适配器响应示例：
+调度层响应示例：
 
 ```json
 {
-  "success": true,
+  "protocol": "1",
+  "request_id": "...",
+  "ok": true,
   "result": {
     "items": [ { "amplitude": 1.0, "mean": 2.0, "count": 1 } ],
     "num_cycles": 1
+  },
+  "meta": {
+    "skill_id": "rainflow",
+    "skill_version": "1.0.0",
+    "duration_ms": 12
   }
 }
 ```
@@ -79,22 +87,22 @@ main.cpp
 
 | 能力 | 实现位置 | 说明 |
 |------|----------|------|
-| Skill 标识 | `task_type: "rainflow"` | 类似 `skill_id` |
+| Skill 标识 | 信封 `skill_id` + manifest `id` | 如 `"rainflow"` |
 | 统一入口 | `Dispatcher::execute` | JSON 信封入、JSON 字符串出 |
-| 能力描述 | `rainflow_schema()` | JSON Schema 风格 input/output |
-| 发现接口（预留） | `listTaskTypes()` / `getSchema()` | `main` 中 help 已提及 `--list` / `--describe` |
-| 统一成败字段 | `success` / `error` / `result` | 便于 Agent 解析 |
+| 能力描述 | `skills/<id>/manifest.json` | `input_schema` / `output_schema` |
+| 发现接口 | `--list` / `--describe` | `listSkillsJson` / `describeSkillJson` |
+| 统一成败字段 | `ok` / `error` / `result` / `meta` | 协议 v1，见 `api_response` |
 
 ### 3.2 与成熟 Agent + Skill 的差距
 
 | 维度 | 当前实现 | 成熟目标 |
 |------|----------|----------|
-| Skill 定义 | C++ 函数 `rainflow_schema()` + 手工 `registerAdapter` | 独立 **Skill Manifest**（id、version、schema、示例） |
-| 注册方式 | `std::string(*)(const std::string&)` 函数指针 | 符合规范：句柄 / 配置结构体 / 进程间 JSON，**跨模块禁函数指针** |
-| 信封协议 | 仅 `task_type` + `payload` | `request_id`、`skill_version`、`context`、`timeout` 等 |
-| 参数校验 | 无调度层校验，失败在 adapter 内 | 执行前 JSON Schema 校验 |
-| 错误模型 | 字符串 `error` | 与 `common/status` 的 `code` / `category` / `message` 统一 |
-| 发现 | 代码内写死注册 | `capabilities`：自动扫描 manifest / 插件目录 |
+| Skill 定义 | manifest 已落地，adapter 无独立 schema 函数 | 示例/标签/版本策略继续完善 |
+| 注册方式 | `SkillExecuteFunc` 静态表（进程内） | 句柄 / 子进程 JSON / 代码生成注册表 |
+| 信封协议 | v1 文档已定；`context`/`options` 未解析 | 解析并实现 `context`、超时等 |
+| 参数校验 | 调度层 `required` 字段 | 完整 JSON Schema（类型、enum） |
+| 错误模型 | `code` / `category` / `message` 已统一 | 日志与 Agent 重试策略联动 |
+| 发现 | CLI + manifest；`kBindings` 手工 | 自动扫描 / CMake 生成注册表 |
 | 部署 | 单 EXE 全链接 | 可选 **Skill Host** 或每 Skill 独立 EXE |
 | 状态 | 无会话 | `context_id` + 资源 **句柄 ID**（网格、结果文件） |
 | 编排 | 单次调用 | 多步工作流或外部 Agent 多轮调用 + 异步 job |
@@ -226,7 +234,7 @@ Agent 在执行 `rainflow` 时 **内部** 使用 logger 记录 `request_id` 与�
 | `execute` | 执行信封 |
 | `health`（可选） | 宿主与依赖（Poco、HDF5）就绪状态 |
 
-与当前 `Dispatcher::listTaskTypes()` / `getSchema()` 对齐演进即可。
+与当前 `Dispatcher::listSkillsJson()` / `describeSkillJson()` 对齐演进即可。
 
 ---
 
@@ -237,9 +245,9 @@ Agent 在执行 `rainflow` 时 **内部** 使用 logger 记录 `request_id` 与�
 **现状：**
 
 ```cpp
-// src/scheduler/Dispatcher.h
-using AdapterFunc = std::string(*)(const std::string&);
-void registerAdapter(const std::string& task_type, AdapterFunc func, ...);
+// src/scheduler/Dispatcher.h（进程内静态表，不对外暴露函数指针）
+using SkillExecuteFunc = StatusOr<Poco::JSON::Object::Ptr>(*)(const std::string& payload_json);
+void registerSkill(const SkillManifest& manifest, SkillExecuteFunc func);
 ```
 
 **演进选项（择一或组合）：**
@@ -284,7 +292,7 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 |------|--------|------|
 | 定义协议版本 | `dosc/skill-protocol-v1.md` | ✅ |
 | 引入 Skill Manifest | `skills/rainflow/manifest.json` + `skill_manifest.*` | ✅ |
-| 统一错误 JSON | `common/status/api_response.h`（遗留 + v1） | ✅ |
+| 统一错误 JSON | `common/status/api_response.h`（v1 `ok`/`error`/`meta`） | ✅ |
 | 调度前校验 | `skill_payload_validator`（required 字段） | ✅ 基础版 |
 | 实现 describe | CLI：`--list` / `--describe rainflow` | ✅ |
 
@@ -379,7 +387,7 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 | Tool call | `execute` 信封 |
 | Tool result | `ok` + `result` 或 `error` |
 
-已有 `rainflow_schema()` 可迁移为 manifest；缺口在 **稳定协议、capabilities 端点、无跨模块函数指针的宿主**。
+rainflow 契约已以 manifest 为准；缺口在 **协议与实现完全收敛、capabilities 完善（如 health）、可观测性与 FEM 句柄**。
 
 ---
 
@@ -419,12 +427,12 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 | `src/scheduler/Dispatcher.*` | 信封解析、校验、执行、`makeSkillApiResponse` |
 | `src/scheduler/skill_registry.*` | 静态 Skill 表 + manifest 注册 |
 | `src/scheduler/skill_manifest.*` | 加载 manifest.json |
-| `src/scheduler/skill_protocol.*` | 信封解析（v1 / 遗留） |
+| `src/scheduler/skill_protocol.*` | 信封解析（protocol v1） |
 | `src/scheduler/skill_payload_validator.*` | payload required 校验 |
 | `src/adapter/rainflow_adapter.*` | `rainflow_execute`：JSON ↔ kernel |
 | `src/kernel/rainflow/` | 雨流算法内核 |
 | `src/main.cpp` | CLI：`--list` / `--describe` / stdin execute |
-| `src/common/status/api_response.*` | 遗留 `success` 与 protocol v1 `ok` |
+| `src/common/status/api_response.*` | 协议 v1 响应（`ok` / `error` / `meta`） |
 | `src/common/status/` | 错误码与 `StatusOr` |
 | `src/common/io/` | JSON / HDF5 |
 | `src/common/logger/` | Poco 日志与错误联动 |
@@ -440,6 +448,7 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 | 1.1 | 2026-05-21 | 实现统一错误 JSON：`api_response.h`，adapter/scheduler 已接入 |
 | 1.2 | 2026-05-21 | API 信封由 scheduler 集中：`SkillExecuteFunc` + `makeApiResponse`；adapter 仅返回 `StatusOr<result JSON>` |
 | 1.3 | 2026-05-21 | 阶段 A/B 落地：manifest、protocol v1、`skill_registry`、CLI、payload 校验；见 `skills/` 与 `scheduler/skill_*` |
+| 1.4 | 2026-05-21 | §2.2/§3.1 与 `skill-protocol-v1.md` 对齐：移除 `task_type`/`success` 等遗留描述 |
 
 ---
 
