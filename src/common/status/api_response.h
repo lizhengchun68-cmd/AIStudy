@@ -38,6 +38,30 @@ std::string makeApiFailureResponse(int code,
 /** @brief Skill 业务结果（result 字段 JSON 对象）→ 完整 API 响应字符串 */
 std::string makeApiResponse(const StatusOr<Poco::JSON::Object::Ptr>& skill_result);
 
+/** @brief 协议 v1 响应 meta（skill_id、skill_version、duration_ms） */
+struct ApiResponseMeta {
+    std::string skill_id;
+    std::string skill_version;
+    int duration_ms = 0;
+};
+
+/** @brief 协议 v1：{ protocol, request_id, ok, result, meta } */
+std::string makeProtocolV1SuccessResponse(const Poco::Dynamic::Var& result,
+                                          const std::string& request_id,
+                                          const ApiResponseMeta& meta);
+
+/** @brief 协议 v1：{ protocol, request_id, ok, error, meta } */
+std::string makeProtocolV1FailureResponse(const ErrorCodeWrapper& error,
+                                          const std::string& request_id,
+                                          const ApiResponseMeta& meta,
+                                          const std::string& messageOverride = "");
+
+/** @brief 按信封模式选择遗留 success 或 protocol v1 响应 */
+std::string makeSkillApiResponse(bool protocol_v1,
+                                 const StatusOr<Poco::JSON::Object::Ptr>& skill_result,
+                                 const std::string& request_id,
+                                 const ApiResponseMeta& meta);
+
 } // namespace AIstudy
 
 #endif // AISTUDY_COMMON_STATUS_API_RESPONSE_H

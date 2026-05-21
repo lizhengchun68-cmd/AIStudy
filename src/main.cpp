@@ -1,38 +1,57 @@
 #include <iostream>
+#include <sstream>
 #include <string>
 
-#include "adapter/rainflow_adapter.h"
-#include "common/status/api_response.h"
 #include "scheduler/Dispatcher.h"
+#include "scheduler/skill_registry.h"
+
+namespace {
 
 void printHelp() {
-    std::cout << "Usage: dispatcher [options]\n"
-              << "  --list                List all available modules\n"
-              << "  --describe <module>   Show input/output schema for a module\n"
-              << "  (no arguments)        Run in task execution mode (reads JSON from stdin)\n";
+    std::cout << "Usage: AIstudy [options]\n"
+              << "  --list                List registered skills (JSON)\n"
+              << "  --describe <skill_id> Show skill manifest / schema\n"
+              << "  (no arguments)        Read one JSON envelope from stdin and execute\n";
 }
 
-int main() {
+std::string readStdinAll() {
+    std::ostringstream oss;
+    oss << std::cin.rdbuf();
+    return oss.str();
+}
+
+} // namespace
+
+int main(int argc, char* argv[]) {
     using namespace AIstudy;
 
     scheduler::Dispatcher dispatcher;
-    dispatcher.registerAdapter("rainflow", adapter::rainflow::rainflow_execute, adapter::rainflow::rainflow_schema());
+    scheduler::registerBuiltinSkills(dispatcher);
 
-    const std::string payload = R"({
-        "load_history": [1.0, 2.0, 3.0, 2.0, 1.0],
-        "method": "ThreePoint",
-        "params": {"threshold": 0.2, "grads": 50}
-    })";
+    if (argc >= 2) {
+        const std::string arg1 = argv[1];
+        if (arg1 == "--list" || arg1 == "-list") {
+            std::cout << dispatcher.listSkillsJson() << std::endl;
+            return 0;
+        }
+        if ((arg1 == "--describe" || arg1 == "-describe") && argc >= 3) {
+            std::cout << dispatcher.describeSkillJson(argv[2]) << std::endl;
+            return 0;
+        }
+        if (arg1 == "--help" || arg1 == "-h") {
+            printHelp();
+            return 0;
+        }
+        printHelp();
+        return 1;
+    }
 
-    // 直接走适配器（result 对象由 makeApiResponse 封装，与调度层一致）
-    std::cout << makeApiResponse(adapter::rainflow::rainflow_execute(payload)) << std::endl;
+    const std::string envelope = readStdinAll();
+    if (envelope.empty()) {
+        printHelp();
+        return 1;
+    }
 
-    // 走调度器信封：task_type + payload（内部同样 makeApiResponse）
-    const std::string envelope = R"({
-        "task_type": "rainflow",
-        "payload": )" + payload + R"(
-    })";
     std::cout << dispatcher.execute(envelope) << std::endl;
-
     return 0;
 }

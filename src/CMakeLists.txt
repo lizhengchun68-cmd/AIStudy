@@ -8,6 +8,11 @@ add_executable(AIstudy main.cpp)
 
 # 链接所有子模块
 # scheduler -> adapter -> kernel + common_status（分层依赖，main 只依赖调度层）
+target_compile_definitions(AIstudy
+    PRIVATE
+        AISTUDY_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+)
+
 target_link_libraries(AIstudy
     PRIVATE
         scheduler

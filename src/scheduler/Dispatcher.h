@@ -2,10 +2,10 @@
 #define DISPATCHER_H
 
 #include "common/status/status_or.h"
+#include "scheduler/skill_manifest.h"
 #include <Poco/JSON/Object.h>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace AIstudy {
 namespace scheduler {
@@ -16,28 +16,35 @@ using SkillResultJson = Poco::JSON::Object::Ptr;
 /**
  * @brief Skill 适配器：payload JSON 字符串 → StatusOr<result 对象>
  *
- * 不在此层生成 success/error 信封；由 Dispatcher::execute 统一调用 makeApiResponse。
+ * 不在此层生成 success/error 信封；由 Dispatcher::execute 统一调用 makeSkillApiResponse。
  */
 using SkillExecuteFunc = StatusOr<SkillResultJson> (*)(const std::string& payload_json);
 
 class Dispatcher {
 public:
-    void registerAdapter(const std::string& task_type, SkillExecuteFunc func, const std::string& schema);
+    void registerSkill(const SkillManifest& manifest, SkillExecuteFunc func);
 
-    /** @brief 解析调度信封，调用 Skill，并序列化为统一 API JSON 响应 */
+    /** @brief 解析调度信封，校验 payload，调用 Skill，序列化为 API JSON */
     std::string execute(const std::string& envelope_json);
 
-    std::vector<std::string> listTaskTypes() const;
+    /** @brief 列出已注册 Skill 摘要 */
+    std::string listSkillsJson() const;
 
-    std::string getSchema(const std::string& task_type) const;
+    /** @brief 返回 manifest 描述 JSON */
+    std::string describeSkillJson(const std::string& skill_id) const;
 
 private:
-    struct AdapterInfo {
+    struct SkillEntry {
         SkillExecuteFunc func;
-        std::string schema;
+        SkillManifest manifest;
     };
-    std::unordered_map<std::string, AdapterInfo> registry_;
-    std::string makeErrorResponse(const std::string& msg) const;
+
+    std::unordered_map<std::string, SkillEntry> registry_;
+
+    const SkillEntry* findSkill(const std::string& skill_id) const;
+    std::string makeProtocolV1EnvelopeError(const std::string& request_id,
+                                            const ErrorCodeWrapper& error,
+                                            const std::string& messageOverride = "") const;
 };
 
 } // namespace scheduler

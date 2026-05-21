@@ -1,6 +1,6 @@
 # AIStudy：从早期 Agent 调度到成熟 Agent + Skill 架构
 
-> 文档版本：1.0  
+> 文档版本：1.3  
 > 适用仓库：`AIStudy`（`src/kernel`、`src/adapter`、`src/scheduler`、`src/common`）  
 > 关联规范：`.cursor/rules/fem-simulation-architecture.mdc`
 
@@ -36,14 +36,17 @@
 
 ```
 main.cpp
-  ├─ 直接调用 adapter::rainflow::rainflow_adapter(payload_json)
-  └─ scheduler::Dispatcher::execute(envelope_json)
-        └─ task_type == "rainflow"
-              └─ rainflow_adapter(payload_json)
-                    └─ kernel::rainflow::rainflowCounting(...)
+  ├─ registerBuiltinSkills(Dispatcher)   // skill_registry 读 skills/<id>/manifest.json
+  ├─ CLI: --list / --describe <skill_id>
+  └─ stdin → Dispatcher::execute(envelope_json)
+        ├─ parseSkillEnvelope（支持 protocol v1 或遗留 task_type）
+        ├─ validatePayloadAgainstManifest
+        ├─ rainflow_execute(payload_json)   // adapter → StatusOr<result>
+        └─ makeSkillApiResponse（scheduler 统一 success 或 protocol v1 ok/meta）
+              └─ kernel::rainflow::rainflowCounting(...)
 ```
 
-信封示例（调度层）：
+信封示例（遗留调度层）：
 
 ```json
 {
@@ -273,33 +276,35 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 
 ## 6. 分阶段改进路线图
 
-### 阶段 A：Skill 契约扎实化（优先级最高）
+### 阶段 A：Skill 契约扎实化（优先级最高）— **已基本完成**
 
 **目标：** Agent 只依赖契约，不依赖 C++ 头文件。
 
-| 任务 | 交付物 |
-|------|--------|
-| 定义协议版本 | `protocol: "1"` 请求/响应规范文档 |
-| 引入 Skill Manifest | 每 Skill 目录 + `manifest.json` |
-| 统一错误 JSON | 映射 `ErrorCodeWrapper` → `error.code/category/message`（**已实现**：`common/status/api_response.h`） |
-| 调度前校验 | 集成 `common/io/json` 或 schema 校验库 |
-| 实现 describe | CLI：`--list` / `--describe rainflow` 读 manifest |
+| 任务 | 交付物 | 状态 |
+|------|--------|------|
+| 定义协议版本 | `dosc/skill-protocol-v1.md` | ✅ |
+| 引入 Skill Manifest | `skills/rainflow/manifest.json` + `skill_manifest.*` | ✅ |
+| 统一错误 JSON | `common/status/api_response.h`（遗留 + v1） | ✅ |
+| 调度前校验 | `skill_payload_validator`（required 字段） | ✅ 基础版 |
+| 实现 describe | CLI：`--list` / `--describe rainflow` | ✅ |
 
 **验收：** 仅给 Agent manifest + 宿主 EXE，即可完成 rainflow 调用与错误处理。
 
 ---
 
-### 阶段 B：调度层去函数指针、可扩展注册
+### 阶段 B：调度层去函数指针、可扩展注册 — **部分完成**
 
 **目标：** 符合架构规则，支持多 Skill 接入。
 
-| 任务 | 交付物 |
-|------|--------|
-| 替换 `AdapterFunc` 注册 | 静态表 / 生成 `skills_registry.cpp` / 子进程 |
-| 自动发现 | 启动时扫描 `skills/` 或 CMake 生成清单 |
-| 版本路由 | `rainflow` + `rainflow@2` 或 `skill_version` 字段 |
+| 任务 | 交付物 | 状态 |
+|------|--------|------|
+| 静态 Skill 分发表 | `skill_registry.cpp`（`kBindings` + manifest 加载） | ✅ |
+| 去掉 main 手工注册 | `registerBuiltinSkills(dispatcher)` | ✅ |
+| 函数指针边界 | `SkillExecuteFunc` 仅 scheduler 内部静态表 | ✅ 进程内 |
+| 版本路由 | 信封 `skill_version` 与 manifest 比对 | ✅ 基础版 |
+| 子进程 / 动态插件 | 独立 EXE 或 `extern "C"` 加载 | ⏳ 未做 |
 
-**验收：** 新增 Skill 无需修改 `main.cpp` 手工 `registerAdapter`。
+**验收：** 新增 Skill 在 `kBindings` 加一行 + `skills/<id>/manifest.json`，无需改 `main.cpp`。
 
 ---
 
@@ -409,12 +414,17 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 
 | 文件 | 作用 |
 |------|------|
-| `src/scheduler/Dispatcher.h` | 调度器接口、函数指针注册 |
-| `src/scheduler/Dispatcher.cpp` | 信封解析、`task_type` 路由 |
-| `src/adapter/rainflow_adapter.h` | rainflow 适配器声明 |
-| `src/adapter/rainflow_adapter.cpp` | JSON ↔ kernel、schema、响应封装 |
+| `dosc/skill-protocol-v1.md` | 协议 v1 请求/响应说明 |
+| `skills/rainflow/manifest.json` | rainflow Skill 契约 |
+| `src/scheduler/Dispatcher.*` | 信封解析、校验、执行、`makeSkillApiResponse` |
+| `src/scheduler/skill_registry.*` | 静态 Skill 表 + manifest 注册 |
+| `src/scheduler/skill_manifest.*` | 加载 manifest.json |
+| `src/scheduler/skill_protocol.*` | 信封解析（v1 / 遗留） |
+| `src/scheduler/skill_payload_validator.*` | payload required 校验 |
+| `src/adapter/rainflow_adapter.*` | `rainflow_execute`：JSON ↔ kernel |
 | `src/kernel/rainflow/` | 雨流算法内核 |
-| `src/main.cpp` | 注册 rainflow、演示直接调用与信封调用 |
+| `src/main.cpp` | CLI：`--list` / `--describe` / stdin execute |
+| `src/common/status/api_response.*` | 遗留 `success` 与 protocol v1 `ok` |
 | `src/common/status/` | 错误码与 `StatusOr` |
 | `src/common/io/` | JSON / HDF5 |
 | `src/common/logger/` | Poco 日志与错误联动 |
@@ -429,6 +439,7 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 | 1.0 | 2026-05-21 | 初稿：基于 rainflow + Dispatcher 现状与成熟 Agent+Skill 差距分析 |
 | 1.1 | 2026-05-21 | 实现统一错误 JSON：`api_response.h`，adapter/scheduler 已接入 |
 | 1.2 | 2026-05-21 | API 信封由 scheduler 集中：`SkillExecuteFunc` + `makeApiResponse`；adapter 仅返回 `StatusOr<result JSON>` |
+| 1.3 | 2026-05-21 | 阶段 A/B 落地：manifest、protocol v1、`skill_registry`、CLI、payload 校验；见 `skills/` 与 `scheduler/skill_*` |
 
 ---
 

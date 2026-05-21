@@ -3,82 +3,134 @@
 #include "common/status/api_response.h"
 #include "common/status/exception/error_category.h"
 #include "common/status/exception/error_codes.h"
-#include <Poco/Dynamic/Var.h>
-#include <Poco/Exception.h>
+#include "scheduler/skill_payload_validator.h"
+#include "scheduler/skill_protocol.h"
+#include <Poco/JSON/Array.h>
 #include <Poco/JSON/Object.h>
-#include <Poco/JSON/Parser.h>
 #include <Poco/JSON/Stringifier.h>
+#include <chrono>
 #include <sstream>
 
 namespace AIstudy {
 namespace scheduler {
 
-void Dispatcher::registerAdapter(const std::string& task_type, SkillExecuteFunc func, const std::string& schema) {
-    registry_[task_type] = {func, schema};
+void Dispatcher::registerSkill(const SkillManifest& manifest, SkillExecuteFunc func) {
+    SkillEntry entry;
+    entry.func = func;
+    entry.manifest = manifest;
+    registry_[manifest.id] = std::move(entry);
 }
 
-std::string Dispatcher::makeErrorResponse(const std::string& msg) const {
-    return makeApiFailureResponse(
-        static_cast<int>(ValidationError::INVALID_INPUT),
-        ErrorCategory::VALIDATION,
-        msg);
+const Dispatcher::SkillEntry* Dispatcher::findSkill(const std::string& skill_id) const {
+    const auto it = registry_.find(skill_id);
+    if (it == registry_.end()) {
+        return nullptr;
+    }
+    return &it->second;
+}
+
+std::string Dispatcher::makeProtocolV1EnvelopeError(const std::string& request_id,
+                                                    const ErrorCodeWrapper& error,
+                                                    const std::string& messageOverride) const {
+    ApiResponseMeta meta;
+    return makeProtocolV1FailureResponse(error, request_id, meta, messageOverride);
 }
 
 std::string Dispatcher::execute(const std::string& envelope_json) {
-    Poco::JSON::Parser parser;
-    try {
-        Poco::Dynamic::Var parsed = parser.parse(envelope_json);
-        Poco::JSON::Object::Ptr envelope = parsed.extract<Poco::JSON::Object::Ptr>();
-
-        if (!envelope->has("task_type")) {
-            return makeErrorResponse("Missing 'task_type' in envelope");
+    const auto envelopeRes = parseSkillEnvelope(envelope_json);
+    if (!envelopeRes.ok()) {
+        if (envelope_json.find("\"protocol\"") != std::string::npos
+            && envelope_json.find("\"1\"") != std::string::npos) {
+            return makeProtocolV1EnvelopeError("", envelopeRes.status());
         }
-        const std::string task_type = envelope->getValue<std::string>("task_type");
-
-        if (!envelope->has("payload")) {
-            return makeErrorResponse("Missing 'payload' in envelope");
-        }
-
-        const auto it = registry_.find(task_type);
-        if (it == registry_.end()) {
-            return makeApiFailureResponse(
-                static_cast<int>(SystemError::UNKNOWN_ERROR),
-                ErrorCategory::SYSTEM,
-                "Unknown task_type: " + task_type);
-        }
-
-        Poco::JSON::Object::Ptr payload_obj = envelope->getObject("payload");
-        std::ostringstream payload_oss;
-        Poco::JSON::Stringifier::condense(payload_obj, payload_oss);
-        const std::string payload_str = payload_oss.str();
-
-        const StatusOr<SkillResultJson> skill_result = it->second.func(payload_str);
-        return makeApiResponse(skill_result);
-
-    } catch (const Poco::Exception& e) {
-        return makeApiFailureResponse(
-            static_cast<int>(JsonError::PARSE_ERROR),
-            ErrorCategory::JSON,
-            std::string("JSON parse error: ") + e.what());
-    } catch (const std::exception& e) {
-        return makeApiFailureResponse(
-            static_cast<int>(SystemError::UNKNOWN_ERROR),
-            ErrorCategory::SYSTEM,
-            std::string("Unexpected error: ") + e.what());
+        return makeApiFailureResponse(envelopeRes.status());
     }
+
+    const SkillEnvelope& envelope = envelopeRes.value();
+    const SkillEntry* entry = findSkill(envelope.skill_id);
+    if (!entry) {
+        const ErrorCodeWrapper err(static_cast<int>(SystemError::UNKNOWN_ERROR),
+                                   ErrorCategory::SYSTEM);
+        if (envelope.protocol_v1) {
+            return makeProtocolV1EnvelopeError(
+                envelope.request_id, err, "Unknown skill_id: " + envelope.skill_id);
+        }
+        return makeApiFailureResponse(err, "Unknown skill_id: " + envelope.skill_id);
+    }
+
+    if (!envelope.skill_version.empty()
+        && envelope.skill_version != entry->manifest.version) {
+        const ErrorCodeWrapper err(static_cast<int>(ValidationError::INVALID_INPUT),
+                                   ErrorCategory::VALIDATION);
+        if (envelope.protocol_v1) {
+            return makeProtocolV1EnvelopeError(
+                envelope.request_id, err, "skill_version mismatch");
+        }
+        return makeApiFailureResponse(err, "skill_version mismatch");
+    }
+
+    const auto validRes = validatePayloadAgainstManifest(envelope.payload, entry->manifest);
+    if (!validRes.ok()) {
+        if (envelope.protocol_v1) {
+            ApiResponseMeta meta;
+            meta.skill_id = envelope.skill_id;
+            meta.skill_version = entry->manifest.version;
+            return makeProtocolV1FailureResponse(
+                validRes.status(), envelope.request_id, meta);
+        }
+        return makeApiFailureResponse(validRes.status());
+    }
+
+    std::ostringstream payload_oss;
+    Poco::JSON::Stringifier::condense(envelope.payload, payload_oss);
+    const std::string payload_str = payload_oss.str();
+
+    const auto t0 = std::chrono::steady_clock::now();
+    const StatusOr<SkillResultJson> skill_result = entry->func(payload_str);
+    const auto t1 = std::chrono::steady_clock::now();
+    const int duration_ms = static_cast<int>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
+
+    ApiResponseMeta meta;
+    meta.skill_id = envelope.skill_id;
+    meta.skill_version = entry->manifest.version;
+    meta.duration_ms = duration_ms;
+
+    return makeSkillApiResponse(envelope.protocol_v1, skill_result, envelope.request_id, meta);
 }
 
-std::vector<std::string> Dispatcher::listTaskTypes() const {
-    std::vector<std::string> types;
-    for (const auto& pair : registry_) types.push_back(pair.first);
-    return types;
+std::string Dispatcher::listSkillsJson() const {
+    Poco::JSON::Object::Ptr root(new Poco::JSON::Object);
+    Poco::JSON::Array::Ptr skills(new Poco::JSON::Array);
+    for (const auto& pair : registry_) {
+        const SkillEntry& entry = pair.second;
+        Poco::JSON::Object::Ptr item(new Poco::JSON::Object);
+        item->set("id", pair.first);
+        item->set("version", entry.manifest.version);
+        item->set("title", entry.manifest.title);
+        item->set("description", entry.manifest.description);
+        item->set("deprecated", entry.manifest.deprecated);
+        skills->add(item);
+    }
+    root->set("skills", skills);
+    std::ostringstream oss;
+    Poco::JSON::Stringifier::condense(root, oss);
+    return oss.str();
 }
 
-std::string Dispatcher::getSchema(const std::string& task_type) const {
-    auto it = registry_.find(task_type);
-    if (it == registry_.end())
-        return makeErrorResponse("Unknown task_type: " + task_type);
-    return it->second.schema.empty() ? "{}" : it->second.schema;
+std::string Dispatcher::describeSkillJson(const std::string& skill_id) const {
+    const SkillEntry* entry = findSkill(skill_id);
+    if (!entry) {
+        Poco::JSON::Object::Ptr err(new Poco::JSON::Object);
+        err->set("ok", false);
+        err->set("error", "Unknown skill_id: " + skill_id);
+        std::ostringstream oss;
+        Poco::JSON::Stringifier::condense(err, oss);
+        return oss.str();
+    }
+    std::ostringstream oss;
+    Poco::JSON::Stringifier::condense(skillManifestToJson(entry->manifest), oss);
+    return oss.str();
 }
 
 } // namespace scheduler

@@ -1,0 +1,59 @@
+{
+  "id": "rainflow",
+  "version": "1.0.0",
+  "title": "RainflowCounting",
+  "description": "雨流计数：载荷谱应力幅与均值分布",
+  "tags": ["fatigue", "signal"],
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "load_history": {
+        "type": "array",
+        "items": { "type": "number" },
+        "description": "载荷时间历程序列"
+      },
+      "method": {
+        "type": "string",
+        "enum": ["ThreePoint", "FourPoint", "ModifiedFourPoint"],
+        "description": "雨流计数算法"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "threshold": { "type": "number", "default": 0.0 },
+          "grads": { "type": "integer", "default": 100, "minimum": 1 }
+        }
+      }
+    },
+    "required": ["load_history", "method"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "amplitude": { "type": "number" },
+            "mean": { "type": "number" },
+            "count": { "type": "integer" }
+          }
+        }
+      },
+      "num_cycles": { "type": "integer" }
+    }
+  },
+  "examples": [
+    {
+      "name": "three_point_default",
+      "input": {
+        "load_history": [1, 2, 3, 2, 1],
+        "method": "ThreePoint",
+        "params": { "threshold": 0.2, "grads": 50 }
+      }
+    }
+  ],
+  "timeout_ms": 30000,
+  "deprecated": false
+}
