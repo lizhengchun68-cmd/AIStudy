@@ -13,9 +13,9 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "common/common_status/exception/error_code_wrapper.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/status_or.h"
+#include "common/status/exception/error_code_wrapper.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/status_or.h"
 #include "common/io/hdf5/hdf5_exception.h"
 #include "common/io/hdf5/hdf5_handles.h"
 #include <H5Cpp.h>
@@ -60,10 +60,10 @@ public:
     double readAttributeWithDefault(const std::string& objectPath, const std::string& attrName, double defaultVal) const;
     std::string readAttributeWithDefault(const std::string& objectPath, const std::string& attrName, const std::string& defaultVal) const;
 
-    /** @brief Check required attributes exist; missing any �?Fail(ATTR_NOT_EXIST) (HDF5_IO §4.1). */
+    /** @brief Check required attributes exist; missing any �?Fail(ATTR_NOT_EXIST) (HDF5_IO §4.1). */
     StatusOr<bool> checkRequiredAttributes(const std::string& objectPath, const std::vector<std::string>& attrNames) const;
 
-    /** @brief Batch read 1D double datasets (HDF5_IO §5.3). Returns path �?StatusOr. */
+    /** @brief Batch read 1D double datasets (HDF5_IO §5.3). Returns path �?StatusOr. */
     std::map<std::string, StatusOr<std::vector<double>>> readDatasetsBatch(const std::vector<std::string>& paths) const;
 
     /** @brief List attribute names at \a objectPath (root \"/\" only for now). */

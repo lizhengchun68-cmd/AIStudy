@@ -1,8 +1,8 @@
 #ifdef AISTUDY_HDF5_ENABLED
 
 #include "common/io/hdf5/hdf5_writer.h"
-#include "common/common_status/exception/error_category.h"
-#include "common/common_status/status_or.h"
+#include "common/status/exception/error_category.h"
+#include "common/status/status_or.h"
 #include "common/io/hdf5/hdf5_handles.h"
 #include "common/io/hdf5/hdf5_logging.h"
 #include "common/io/hdf5/hdf5_options.h"

@@ -2,9 +2,9 @@
 #define COMMON_LOGGER_LOGGER_ERROR_H
 
 #include "logger.h"
-#include "common/common_status/exception/error_code_wrapper.h"
-#include "common/common_status/exception/error_info.h"
-#include "common/common_status/status_or.h"
+#include "common/status/exception/error_code_wrapper.h"
+#include "common/status/exception/error_info.h"
+#include "common/status/status_or.h"
 #include <exception>
 #include <string>
 

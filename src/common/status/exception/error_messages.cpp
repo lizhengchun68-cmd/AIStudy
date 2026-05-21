@@ -1,6 +1,6 @@
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/exception/error_code_registry.h"
-#include "common/common_status/exception/error_category.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/exception/error_code_registry.h"
+#include "common/status/exception/error_category.h"
 
 namespace AIstudy {
 

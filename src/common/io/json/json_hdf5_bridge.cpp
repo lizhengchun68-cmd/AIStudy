@@ -4,10 +4,10 @@
 #include "common/io/json/json_advanced.h"
 #include "common/io/hdf5/hdf5_reader.h"
 #include "common/io/hdf5/hdf5_writer.h"
-#include "common/common_status/exception/error_category.h"
-#include "common/common_status/status_or.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/exception/error_code_wrapper.h"
+#include "common/status/exception/error_category.h"
+#include "common/status/status_or.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/exception/error_code_wrapper.h"
 #include <Poco/JSON/Object.h>
 #include <Poco/JSON/Array.h>
 #include <Poco/Dynamic/Var.h>

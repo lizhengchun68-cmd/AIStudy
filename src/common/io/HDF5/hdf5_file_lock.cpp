@@ -1,9 +1,9 @@
 #ifdef AISTUDY_HDF5_ENABLED
 
 #include "common/io/hdf5/hdf5_file_lock.h"
-#include "common/common_status/exception/error_code_wrapper.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/exception/error_category.h"
+#include "common/status/exception/error_code_wrapper.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/exception/error_category.h"
 #include <cerrno>
 #include <chrono>
 #include <thread>

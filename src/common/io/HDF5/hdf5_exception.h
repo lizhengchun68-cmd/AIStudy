@@ -6,7 +6,7 @@
 #ifndef AISTUDY_COMMON_IO_HDF5_HDF5_EXCEPTION_H
 #define AISTUDY_COMMON_IO_HDF5_HDF5_EXCEPTION_H
 
-#include "common/common_status/exception/exception.h"
+#include "common/status/exception/exception.h"
 
 namespace AIstudy {
 namespace common {

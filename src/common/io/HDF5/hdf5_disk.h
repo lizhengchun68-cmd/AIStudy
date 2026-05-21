@@ -8,7 +8,7 @@
 
 #ifdef AISTUDY_HDF5_ENABLED
 
-#include "common/common_status/status_or.h"
+#include "common/status/status_or.h"
 #include <cstdint>
 #include <string>
 

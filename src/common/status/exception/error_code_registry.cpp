@@ -1,4 +1,4 @@
-#include "common/common_status/exception/error_code_registry.h"
+#include "common/status/exception/error_code_registry.h"
 #include <sstream>
 
 namespace AIstudy {

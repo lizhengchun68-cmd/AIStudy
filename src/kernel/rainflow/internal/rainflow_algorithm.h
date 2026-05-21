@@ -2,8 +2,8 @@
 #define RAINFLOW_ALGORITHM_H
 
 #include "kernel/rainflow/rainflow.h"
-#include "common/common_status/status_or.h"
-#include "common/common_status/exception/exception.h"
+#include "common/status/status_or.h"
+#include "common/status/exception/exception.h"
 
 namespace AIstudy {
 namespace kernel {

@@ -1,9 +1,9 @@
 #ifndef COMMON_IO_JSON_JSON_SERIALIZABLE_H
 #define COMMON_IO_JSON_JSON_SERIALIZABLE_H
 
-#include "common/common_status/status_or.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/exception/error_category.h"
+#include "common/status/status_or.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/exception/error_category.h"
 #include <Poco/JSON/Object.h>
 
 namespace AIstudy {

@@ -1,54 +1,45 @@
-# HDF5 I/O：thirdparty/hdf5（prebuilt 子目录或根目录，Debug/Release 分目录）
+# HDF5 I/O：thirdparty/hdf5（Debug/Release 分目录）
 option(AISTUDY_ENABLE_HDF5 "Build common_io_hdf5 (HDF5 I/O module)" ON)
 
 if(NOT AISTUDY_ENABLE_HDF5)
     return()
 endif()
 
-set(AISTUDY_HDF5_PREBUILT "")
-foreach(_aistudy_hdf5_root
-    "${CMAKE_SOURCE_DIR}/thirdparty/hdf5/prebuilt"
-    "${CMAKE_SOURCE_DIR}/thirdparty/hdf5"
-)
-    if(EXISTS "${_aistudy_hdf5_root}/include/H5Cpp.h")
-        set(AISTUDY_HDF5_PREBUILT "${_aistudy_hdf5_root}")
-        break()
-    endif()
-endforeach()
+set(AISTUDY_HDF5_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/hdf5")
 
-if(NOT AISTUDY_HDF5_PREBUILT)
-    message(STATUS "HDF5 not found under thirdparty/hdf5; common_io_hdf5 skipped.")
+if(NOT EXISTS "${AISTUDY_HDF5_ROOT}/include/H5Cpp.h")
+    message(STATUS "HDF5 not found at ${AISTUDY_HDF5_ROOT}; common_io_hdf5 skipped.")
     return()
 endif()
 
 set(_aistudy_hdf5_required
-    "${AISTUDY_HDF5_PREBUILT}/lib/Release/hdf5.lib"
-    "${AISTUDY_HDF5_PREBUILT}/lib/Release/hdf5_cpp.lib"
-    "${AISTUDY_HDF5_PREBUILT}/lib/Debug/hdf5.lib"
-    "${AISTUDY_HDF5_PREBUILT}/lib/Debug/hdf5_cpp.lib"
-    "${AISTUDY_HDF5_PREBUILT}/bin/Release/hdf5.dll"
-    "${AISTUDY_HDF5_PREBUILT}/bin/Release/hdf5_cpp.dll"
-    "${AISTUDY_HDF5_PREBUILT}/bin/Debug/hdf5.dll"
-    "${AISTUDY_HDF5_PREBUILT}/bin/Debug/hdf5_cpp.dll"
+    "${AISTUDY_HDF5_ROOT}/lib/Release/hdf5.lib"
+    "${AISTUDY_HDF5_ROOT}/lib/Release/hdf5_cpp.lib"
+    "${AISTUDY_HDF5_ROOT}/lib/Debug/hdf5.lib"
+    "${AISTUDY_HDF5_ROOT}/lib/Debug/hdf5_cpp.lib"
+    "${AISTUDY_HDF5_ROOT}/bin/Release/hdf5.dll"
+    "${AISTUDY_HDF5_ROOT}/bin/Release/hdf5_cpp.dll"
+    "${AISTUDY_HDF5_ROOT}/bin/Debug/hdf5.dll"
+    "${AISTUDY_HDF5_ROOT}/bin/Debug/hdf5_cpp.dll"
 )
 
 foreach(_aistudy_hdf5_file IN LISTS _aistudy_hdf5_required)
     if(NOT EXISTS "${_aistudy_hdf5_file}")
-        message(STATUS "HDF5 prebuilt incomplete (missing ${_aistudy_hdf5_file}); common_io_hdf5 skipped.")
+        message(STATUS "HDF5 incomplete at ${AISTUDY_HDF5_ROOT} (missing ${_aistudy_hdf5_file}); common_io_hdf5 skipped.")
         return()
     endif()
 endforeach()
 
-set(AISTUDY_HDF5_INCLUDE_DIR "${AISTUDY_HDF5_PREBUILT}/include")
+set(AISTUDY_HDF5_INCLUDE_DIR "${AISTUDY_HDF5_ROOT}/include")
 
 if(NOT TARGET AISTudy::HDF5)
     add_library(AISTudy::HDF5 SHARED IMPORTED GLOBAL)
     set_target_properties(AISTudy::HDF5 PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${AISTUDY_HDF5_INCLUDE_DIR}"
-        IMPORTED_IMPLIB_RELEASE "${AISTUDY_HDF5_PREBUILT}/lib/Release/hdf5.lib"
-        IMPORTED_LOCATION_RELEASE "${AISTUDY_HDF5_PREBUILT}/bin/Release/hdf5.dll"
-        IMPORTED_IMPLIB_DEBUG "${AISTUDY_HDF5_PREBUILT}/lib/Debug/hdf5.lib"
-        IMPORTED_LOCATION_DEBUG "${AISTUDY_HDF5_PREBUILT}/bin/Debug/hdf5.dll"
+        IMPORTED_IMPLIB_RELEASE "${AISTUDY_HDF5_ROOT}/lib/Release/hdf5.lib"
+        IMPORTED_LOCATION_RELEASE "${AISTUDY_HDF5_ROOT}/bin/Release/hdf5.dll"
+        IMPORTED_IMPLIB_DEBUG "${AISTUDY_HDF5_ROOT}/lib/Debug/hdf5.lib"
+        IMPORTED_LOCATION_DEBUG "${AISTUDY_HDF5_ROOT}/bin/Debug/hdf5.dll"
         MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
         MAP_IMPORTED_CONFIG_MINSIZEREL Release
     )
@@ -58,10 +49,10 @@ if(NOT TARGET AISTudy::HDF5_CPP)
     add_library(AISTudy::HDF5_CPP SHARED IMPORTED GLOBAL)
     set_target_properties(AISTudy::HDF5_CPP PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${AISTUDY_HDF5_INCLUDE_DIR}"
-        IMPORTED_IMPLIB_RELEASE "${AISTUDY_HDF5_PREBUILT}/lib/Release/hdf5_cpp.lib"
-        IMPORTED_LOCATION_RELEASE "${AISTUDY_HDF5_PREBUILT}/bin/Release/hdf5_cpp.dll"
-        IMPORTED_IMPLIB_DEBUG "${AISTUDY_HDF5_PREBUILT}/lib/Debug/hdf5_cpp.lib"
-        IMPORTED_LOCATION_DEBUG "${AISTUDY_HDF5_PREBUILT}/bin/Debug/hdf5_cpp.dll"
+        IMPORTED_IMPLIB_RELEASE "${AISTUDY_HDF5_ROOT}/lib/Release/hdf5_cpp.lib"
+        IMPORTED_LOCATION_RELEASE "${AISTUDY_HDF5_ROOT}/bin/Release/hdf5_cpp.dll"
+        IMPORTED_IMPLIB_DEBUG "${AISTUDY_HDF5_ROOT}/lib/Debug/hdf5_cpp.lib"
+        IMPORTED_LOCATION_DEBUG "${AISTUDY_HDF5_ROOT}/bin/Debug/hdf5_cpp.dll"
         MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
         MAP_IMPORTED_CONFIG_MINSIZEREL Release
     )
@@ -98,4 +89,4 @@ target_link_libraries(common_io_hdf5
         AISTudy::HDF5
 )
 
-message(STATUS "HDF5 enabled: common_io_hdf5 -> ${AISTUDY_HDF5_PREBUILT}")
+message(STATUS "HDF5 enabled: common_io_hdf5 -> ${AISTUDY_HDF5_ROOT}")

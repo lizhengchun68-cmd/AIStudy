@@ -14,9 +14,9 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "common/common_status/exception/error_code_wrapper.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/status_or.h"
+#include "common/status/exception/error_code_wrapper.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/status_or.h"
 #include "common/io/hdf5/hdf5_exception.h"
 #include "common/io/hdf5/hdf5_handles.h"
 #include "common/io/hdf5/hdf5_options.h"

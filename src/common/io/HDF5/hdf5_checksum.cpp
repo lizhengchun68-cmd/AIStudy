@@ -1,8 +1,8 @@
 #ifdef AISTUDY_HDF5_ENABLED
 
 #include "common/io/hdf5/hdf5_checksum.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/exception/error_category.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/exception/error_category.h"
 #include <cstring>
 #include <sstream>
 #include <iomanip>

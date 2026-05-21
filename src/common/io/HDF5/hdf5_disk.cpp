@@ -1,9 +1,9 @@
 #ifdef AISTUDY_HDF5_ENABLED
 
 #include "common/io/hdf5/hdf5_disk.h"
-#include "common/common_status/exception/error_code_wrapper.h"
-#include "common/common_status/exception/error_codes.h"
-#include "common/common_status/exception/error_category.h"
+#include "common/status/exception/error_code_wrapper.h"
+#include "common/status/exception/error_codes.h"
+#include "common/status/exception/error_category.h"
 #include <string>
 
 #if defined(_WIN32) || defined(_WIN64)
