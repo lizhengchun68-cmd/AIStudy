@@ -9,10 +9,6 @@ out/
 *.suo
 *.sln.docstates
 x64/
-[Dd]ebug/
-[Rr]elease/
-[Rr]elWithDebInfo/
-[Mm]inSizeRel/
 *.obj
 *.pch
 *.pdb

@@ -2,7 +2,7 @@
 #include "internal/rainflow_three_point.h"
 #include "internal/rainflow_four_point.h"
 #include "internal/rainflow_modified_four_point.h"
-#include "common/status/exception/error_codes.h"
+#include "common/common_status/exception/error_codes.h"
 
 namespace AIstudy {
 namespace kernel {

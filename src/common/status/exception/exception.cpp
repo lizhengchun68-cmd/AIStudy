@@ -1,5 +1,5 @@
-#include "common/status/exception/exception.h"
-#include "common/status/exception/error_info.h"
+#include "common/common_status/exception/exception.h"
+#include "common/common_status/exception/error_info.h"
 #include <stdexcept>
 
 namespace AIstudy {

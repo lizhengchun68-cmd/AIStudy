@@ -1,2 +1,3 @@
-# common 层：状态与异常（status 子模块）
+# common 层
 add_subdirectory(status)
+add_subdirectory(io)

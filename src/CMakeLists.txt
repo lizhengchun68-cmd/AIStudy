@@ -7,7 +7,7 @@ add_subdirectory(scheduler)
 add_executable(AIstudy main.cpp)
 
 # 链接所有子模块
-# scheduler -> adapter -> kernel + common（分层依赖，main 只依赖调度层）
+# scheduler -> adapter -> kernel + common_status（分层依赖，main 只依赖调度层）
 target_link_libraries(AIstudy
     PRIVATE
         scheduler
@@ -24,3 +24,24 @@ foreach(_poco_dll PocoFoundation.dll PocoJSON.dll)
         )
     endif()
 endforeach()
+
+# 复制 HDF5 运行时 DLL（thirdparty/hdf5/prebuilt 或 thirdparty/hdf5 根目录）
+set(_aistudy_hdf5_prebuilt "")
+foreach(_aistudy_hdf5_root
+    "${CMAKE_SOURCE_DIR}/thirdparty/hdf5/prebuilt"
+    "${CMAKE_SOURCE_DIR}/thirdparty/hdf5"
+)
+    if(EXISTS "${_aistudy_hdf5_root}/bin/Release/hdf5.dll")
+        set(_aistudy_hdf5_prebuilt "${_aistudy_hdf5_root}")
+        break()
+    endif()
+endforeach()
+if(_aistudy_hdf5_prebuilt)
+    foreach(_hdf5_dll hdf5.dll hdf5_cpp.dll)
+        add_custom_command(TARGET AIstudy POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${_aistudy_hdf5_prebuilt}/bin/$<IF:$<CONFIG:Debug>,Debug,Release>/${_hdf5_dll}"
+                $<TARGET_FILE_DIR:AIstudy>
+        )
+    endforeach()
+endif()
