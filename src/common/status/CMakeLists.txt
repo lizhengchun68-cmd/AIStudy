@@ -1,6 +1,7 @@
 # common/status：错误码与 StatusOr（对外目标名 common_status）
 
 set(COMMON_STATUS_SOURCES
+    api_response.cpp
     exception/error_category.cpp
     exception/error_code_registry.cpp
     exception/error_code_wrapper.cpp

@@ -12,6 +12,7 @@ target_include_directories(scheduler
 target_link_libraries(scheduler
     PUBLIC
         adapter
+        common_status
 )
 
 if(TARGET PocoJSON::PocoJSON)

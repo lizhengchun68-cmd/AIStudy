@@ -1,7 +1,8 @@
 #ifndef DISPATCHER_H
 #define DISPATCHER_H
 
-#include <functional>
+#include "common/status/status_or.h"
+#include <Poco/JSON/Object.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -9,24 +10,30 @@
 namespace AIstudy {
 namespace scheduler {
 
-    using AdapterFunc = std::string(*)(const std::string&);
+/** @brief Skill 执行结果：成功时为写入 API `result` 字段的 JSON 对象 */
+using SkillResultJson = Poco::JSON::Object::Ptr;
 
-    class Dispatcher {
+/**
+ * @brief Skill 适配器：payload JSON 字符串 → StatusOr<result 对象>
+ *
+ * 不在此层生成 success/error 信封；由 Dispatcher::execute 统一调用 makeApiResponse。
+ */
+using SkillExecuteFunc = StatusOr<SkillResultJson> (*)(const std::string& payload_json);
+
+class Dispatcher {
 public:
-    // 注册一个适配器
-    void registerAdapter(const std::string& task_type, AdapterFunc func, const std::string& schema);
+    void registerAdapter(const std::string& task_type, SkillExecuteFunc func, const std::string& schema);
 
-    // 执行任务信封（输入整个信封 JSON 字符串，返回结果 JSON 字符串）
+    /** @brief 解析调度信封，调用 Skill，并序列化为统一 API JSON 响应 */
     std::string execute(const std::string& envelope_json);
 
-    // 列出所有已注册的 task_type（供 --describe 使用，下一步会用到）
     std::vector<std::string> listTaskTypes() const;
 
     std::string getSchema(const std::string& task_type) const;
 
 private:
     struct AdapterInfo {
-        AdapterFunc func;
+        SkillExecuteFunc func;
         std::string schema;
     };
     std::unordered_map<std::string, AdapterInfo> registry_;

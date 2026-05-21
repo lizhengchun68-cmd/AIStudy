@@ -281,7 +281,7 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 |------|--------|
 | 定义协议版本 | `protocol: "1"` 请求/响应规范文档 |
 | 引入 Skill Manifest | 每 Skill 目录 + `manifest.json` |
-| 统一错误 JSON | 映射 `ErrorCodeWrapper` → `error.code/category/message` |
+| 统一错误 JSON | 映射 `ErrorCodeWrapper` → `error.code/category/message`（**已实现**：`common/status/api_response.h`） |
 | 调度前校验 | 集成 `common/io/json` 或 schema 校验库 |
 | 实现 describe | CLI：`--list` / `--describe rainflow` 读 manifest |
 
@@ -427,6 +427,8 @@ rainflow 当前为 **无状态单次计算**，可作为 Skill 样板；**网格
 | 版本 | 日期 | 说明 |
 |------|------|------|
 | 1.0 | 2026-05-21 | 初稿：基于 rainflow + Dispatcher 现状与成熟 Agent+Skill 差距分析 |
+| 1.1 | 2026-05-21 | 实现统一错误 JSON：`api_response.h`，adapter/scheduler 已接入 |
+| 1.2 | 2026-05-21 | API 信封由 scheduler 集中：`SkillExecuteFunc` + `makeApiResponse`；adapter 仅返回 `StatusOr<result JSON>` |
 
 ---
 
