@@ -1,0 +1,41 @@
+{
+  "id": "mesh_import",
+  "version": "0.1.0",
+  "title": "MeshImport",
+  "description": "网格导入骨架：登记 mesh_ 句柄与 artifact 占位文件（M5b stub）",
+  "tags": ["fem", "mesh"],
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "source_path": {
+        "type": "string",
+        "description": "输入网格文件路径"
+      },
+      "mesh_handle": {
+        "type": "string",
+        "description": "输出句柄 ID，须 mesh_ 前缀，默认 mesh_main"
+      }
+    },
+    "required": ["source_path"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "mesh_handle": { "type": "string" },
+      "uri": { "type": "string" },
+      "source_path": { "type": "string" }
+    }
+  },
+  "examples": [
+    {
+      "name": "import_default_handle",
+      "input": {
+        "source_path": "model.inp",
+        "mesh_handle": "mesh_main"
+      }
+    }
+  ],
+  "timeout_ms": 60000,
+  "deprecated": false
+}

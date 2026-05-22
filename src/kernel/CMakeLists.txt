@@ -1,4 +1,5 @@
 add_library(kernel STATIC
+    mesh/mesh_import.cpp
     rainflow/rainflow.cpp
     rainflow/rainflow.h
     rainflow/internal/rainflow_algorithm.h

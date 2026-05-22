@@ -1,3 +1,6 @@
+# Session artifacts (M5b)
+.aistudy/
+
 # CMake / MSVC 构建产物
 build/
 thirdparty/poco/build-prebuilt/

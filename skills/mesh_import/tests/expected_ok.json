@@ -1,0 +1,13 @@
+{
+  "protocol": "1",
+  "ok": true,
+  "result": {
+    "mesh_handle": "mesh_main",
+    "uri": "artifact://test-session-m5b/mesh_main.h5",
+    "source_path": "model.inp"
+  },
+  "meta": {
+    "skill_id": "mesh_import",
+    "skill_version": "0.1.0"
+  }
+}

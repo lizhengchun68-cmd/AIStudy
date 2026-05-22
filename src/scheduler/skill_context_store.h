@@ -32,6 +32,9 @@ public:
     StatusOr<bool> mergeInbound(const std::string& context_id,
                                 const std::vector<ArtifactMeta>& inbound);
 
+    /** @brief For tests: remove one session and its in-memory handles. */
+    StatusOr<bool> dropContext(const std::string& context_id);
+
     static ContextStore& instance();
 };
 

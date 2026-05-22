@@ -15,8 +15,14 @@ add_library(scheduler STATIC
     skill_context_types.h
     context_handle_rules.cpp
     context_handle_rules.h
+    context_store_errors.cpp
+    context_store_errors.h
     skill_context_store.cpp
     skill_context_store.h
+    skill_artifact_paths.cpp
+    skill_artifact_paths.h
+    skill_execution_context.cpp
+    skill_execution_context.h
 )
 
 target_include_directories(scheduler

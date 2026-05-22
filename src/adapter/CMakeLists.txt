@@ -1,4 +1,6 @@
 add_library(adapter STATIC
+    mesh_import_adapter.cpp
+    mesh_import_adapter.h
     host_echo_adapter.cpp
     host_echo_adapter.h
     rainflow_adapter.cpp

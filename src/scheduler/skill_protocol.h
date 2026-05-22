@@ -2,8 +2,10 @@
 #define AISTUDY_SCHEDULER_SKILL_PROTOCOL_H
 
 #include "common/status/status_or.h"
+#include "scheduler/skill_context_types.h"
 #include <Poco/JSON/Object.h>
 #include <string>
+#include <vector>
 
 namespace AIstudy {
 namespace scheduler {
@@ -14,13 +16,17 @@ struct SkillEnvelope {
     std::string skill_id;
     std::string skill_version;
     Poco::JSON::Object::Ptr payload;
-    /** @brief From options.timeout_ms; 0 means unset. Cancellation not implemented (M3 logs only). */
     int timeout_ms = 0;
+    /** @brief Empty if stateless execute. */
+    std::string context_id;
+    std::vector<ArtifactMeta> inbound_handles;
 };
 
 StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json);
 
-/** @brief �?request_id 为空则生�?UUID 字符�?*/
+/** @brief After failed parseSkillEnvelope, validation detail for messageOverride (M5b). */
+const std::string& lastEnvelopeValidationDetail();
+
 std::string ensureRequestId(const std::string& request_id);
 
 } // namespace scheduler

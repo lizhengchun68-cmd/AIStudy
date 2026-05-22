@@ -13,15 +13,76 @@ ErrorCodeWrapper validationFail() {
                             ErrorCategory::VALIDATION);
 }
 
-StatusOr<ArtifactMeta> failMeta(const std::string& /*path*/, const std::string& /*reason*/) {
-    return StatusOr<ArtifactMeta>::Fail(validationFail());
-}
-
 bool isAllowedIdChar(char c) {
     return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_' || c == '.' || c == '-';
 }
 
 } // namespace
+
+std::string formatValidationDetail(const std::string& path, const std::string& reason) {
+    if (path.empty()) {
+        return reason;
+    }
+    return path + ": " + reason;
+}
+
+std::string describeInvalidContextId(const std::string& context_id) {
+    if (context_id.empty()) {
+        return formatValidationDetail("context.context_id", "must not be empty");
+    }
+    if (context_id.size() > 64) {
+        return formatValidationDetail("context.context_id", "exceeds max length 64");
+    }
+    for (char c : context_id) {
+        if (!isAllowedIdChar(c)) {
+            return formatValidationDetail("context.context_id",
+                                          "invalid character (allowed: alnum, _, ., -)");
+        }
+    }
+    return formatValidationDetail("context.context_id", "invalid context_id");
+}
+
+std::string describeInvalidHandleId(const std::string& handle_id) {
+    const std::string path =
+        handle_id.empty() ? "context.handles" : ("context.handles." + handle_id);
+    if (handle_id.empty()) {
+        return formatValidationDetail(path, "handle_id must not be empty");
+    }
+    if (handle_id.size() > 128) {
+        return formatValidationDetail(path, "exceeds max length 128");
+    }
+    if (handleKindFromPrefix(handle_id) == HandleKind::Unknown) {
+        return formatValidationDetail(path, "invalid handle_id prefix (expected mesh_/result_/file_)");
+    }
+    for (char c : handle_id) {
+        if (!isAllowedIdChar(c)) {
+            return formatValidationDetail(path,
+                                          "invalid character (allowed: alnum, _, ., -)");
+        }
+    }
+    return formatValidationDetail(path, "invalid handle_id");
+}
+
+ContextParseResult::ContextParseResult(bool success,
+                                       std::string context_id,
+                                       std::vector<ArtifactMeta> inbound,
+                                       ErrorCodeWrapper error,
+                                       std::string detail)
+    : success_(success),
+      context_id_(std::move(context_id)),
+      inbound_handles_(std::move(inbound)),
+      error_(std::move(error)),
+      detail_(std::move(detail)) {}
+
+ContextParseResult ContextParseResult::success(std::string context_id,
+                                             std::vector<ArtifactMeta> inbound) {
+    return ContextParseResult(true, std::move(context_id), std::move(inbound),
+                              ErrorCodeWrapper(), "");
+}
+
+ContextParseResult ContextParseResult::failure(const std::string& detail) {
+    return ContextParseResult(false, "", {}, validationFail(), detail);
+}
 
 const char* handleKindToString(HandleKind kind) {
     switch (kind) {
@@ -101,7 +162,7 @@ StatusOr<ArtifactMeta> parseHandleEntry(const std::string& handle_id,
                                         const Poco::JSON::Object::Ptr& obj,
                                         const std::string& path_prefix) {
     if (!isValidHandleId(handle_id)) {
-        return failMeta(path_prefix, "invalid handle_id prefix or charset");
+        return StatusOr<ArtifactMeta>::Fail(validationFail());
     }
     ArtifactMeta meta;
     meta.handle_id = handle_id;
@@ -112,10 +173,10 @@ StatusOr<ArtifactMeta> parseHandleEntry(const std::string& handle_id,
             const std::string kind_str = obj->getValue<std::string>("kind");
             const HandleKind declared = parseKindString(kind_str);
             if (declared == HandleKind::Unknown) {
-                return failMeta(path_prefix, "unknown kind");
+                return StatusOr<ArtifactMeta>::Fail(validationFail());
             }
             if (!handleKindMatchesId(handle_id, declared)) {
-                return failMeta(path_prefix, "kind does not match handle_id prefix");
+                return StatusOr<ArtifactMeta>::Fail(validationFail());
             }
             meta.kind = declared;
         }
@@ -126,20 +187,19 @@ StatusOr<ArtifactMeta> parseHandleEntry(const std::string& handle_id,
     return StatusOr<ArtifactMeta>::Ok(std::move(meta));
 }
 
-StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>> parseContextObject(
-    const Poco::JSON::Object::Ptr& context_obj) {
+ContextParseResult parseContextObjectDetailed(const Poco::JSON::Object::Ptr& context_obj) {
     if (!context_obj) {
-        return StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>>::Ok(
-            std::make_pair(std::string(), std::vector<ArtifactMeta>()));
+        return ContextParseResult::success("", {});
     }
 
     if (!context_obj->has("context_id")) {
-        return StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>>::Fail(validationFail());
+        return ContextParseResult::failure(
+            formatValidationDetail("context", "context_id required"));
     }
 
     const std::string context_id = context_obj->getValue<std::string>("context_id");
     if (!isValidContextId(context_id)) {
-        return StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>>::Fail(validationFail());
+        return ContextParseResult::failure(describeInvalidContextId(context_id));
     }
 
     std::vector<ArtifactMeta> handles;
@@ -151,17 +211,38 @@ StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>> parseContextObject(
             if (handles_obj->isObject(key)) {
                 entry = handles_obj->getObject(key);
             }
+            if (!isValidHandleId(key)) {
+                return ContextParseResult::failure(describeInvalidHandleId(key));
+            }
             auto parsed = parseHandleEntry(key, entry, path);
             if (!parsed.ok()) {
-                return StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>>::Fail(
-                    parsed.status());
+                if (entry && entry->has("kind")) {
+                    const HandleKind declared = parseKindString(entry->getValue<std::string>("kind"));
+                    if (declared == HandleKind::Unknown) {
+                        return ContextParseResult::failure(
+                            formatValidationDetail(path, "unknown kind"));
+                    }
+                    return ContextParseResult::failure(formatValidationDetail(
+                        path, "kind does not match handle_id prefix"));
+                }
+                return ContextParseResult::failure(
+                    formatValidationDetail(path, "invalid handle entry"));
             }
             handles.push_back(parsed.value());
         }
     }
 
+    return ContextParseResult::success(context_id, std::move(handles));
+}
+
+StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>> parseContextObject(
+    const Poco::JSON::Object::Ptr& context_obj) {
+    const auto detailed = parseContextObjectDetailed(context_obj);
+    if (!detailed.ok()) {
+        return StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>>::Fail(detailed.error());
+    }
     return StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>>::Ok(
-        std::make_pair(context_id, std::move(handles)));
+        std::make_pair(detailed.context_id(), detailed.inbound_handles()));
 }
 
 } // namespace scheduler

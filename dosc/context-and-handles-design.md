@@ -30,7 +30,7 @@ FEM 多步工作流（导入网格 → 求解 → 导出）中，大对象不宜
 
 ### 2.1 位置
 
-与 `skill-protocol-v1.md` 一致，在 **调度信封**（非 `payload`）上可选携带：
+与 [`skill-protocol-v1.md`](skill-protocol-v1.md) §2.4 一致，在 **调度信封**（非 `payload`）上可选携带：
 
 ```json
 {
@@ -192,6 +192,6 @@ M5a **不**修改 `SkillExecuteFunc` 签名；M5b 通过 `thread_local` 或 `exe
 
 ## 10. 参考
 
-- `dosc/skill-protocol-v1.md`
+- [`dosc/skill-protocol-v1.md`](skill-protocol-v1.md)（协议 §2.4 `context` 与本文 §2 对齐）
 - `src/scheduler/skill_context_types.h`
 - `src/scheduler/context_handle_rules.*`

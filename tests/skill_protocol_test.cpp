@@ -24,6 +24,26 @@ TEST(SkillProtocol, ParsesProtocolV1Envelope) {
     EXPECT_EQ(result.value().skill_id, "rainflow");
     EXPECT_FALSE(result.value().request_id.empty());
     EXPECT_TRUE(result.value().payload != nullptr);
+    EXPECT_TRUE(result.value().context_id.empty());
+}
+
+TEST(SkillProtocol, ParsesEnvelopeContext) {
+    const std::string json = R"({
+        "protocol": "1",
+        "skill_id": "mesh_import",
+        "context": {
+            "context_id": "sess-1",
+            "handles": {
+                "file_in": { "kind": "file", "uri": "file://data.inp" }
+            }
+        },
+        "payload": { "source_path": "data.inp" }
+    })";
+    const auto result = parseSkillEnvelope(json);
+    ASSERT_TRUE(result.ok());
+    EXPECT_EQ(result.value().context_id, "sess-1");
+    ASSERT_EQ(result.value().inbound_handles.size(), 1u);
+    EXPECT_EQ(result.value().inbound_handles[0].handle_id, "file_in");
 }
 
 TEST(SkillProtocol, ParsesOptionsTimeoutMs) {

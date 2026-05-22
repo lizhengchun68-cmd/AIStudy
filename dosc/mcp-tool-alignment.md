@@ -33,6 +33,7 @@ Agent 生成 payload 前应阅读 `input_schema`（通过 `--describe` 或仓库
 |----------|-------------|--------------|------|
 | `rainflow` | `rainflow` | `load_history`, `method` | 雨流计数 |
 | `host_echo` | `host_echo` | `message` | 回显烟测 |
+| `mesh_import` | `mesh_import` | `source_path`；信封需 `context.context_id` | 网格导入骨架（M5b） |
 
 ## 4. 推荐 Agent 工作流
 
@@ -50,7 +51,7 @@ Agent 生成 payload 前应阅读 `input_schema`（通过 `--describe` 或仓库
 
 | 信封字段 | 状态 |
 |----------|------|
-| `context` | M5 设计/实现 |
+| `context` | M5b：`context_id` + 可选 `handles`；无状态 Skill 可省略 |
 | `options.timeout_ms` | 已解析并写日志，**未**强制超时 |
 
 配置 MCP 时勿依赖上述字段的语义，直至对应里程碑完成。

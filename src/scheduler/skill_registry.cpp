@@ -1,5 +1,6 @@
 #include "scheduler/skill_registry.h"
 #include "adapter/host_echo_adapter.h"
+#include "adapter/mesh_import_adapter.h"
 #include "adapter/rainflow_adapter.h"
 #include "common/logger/logger.h"
 #include "scheduler/skill_manifest.h"
@@ -18,6 +19,7 @@ struct SkillBinding {
 const SkillBinding kBindings[] = {
     {"rainflow", adapter::rainflow::rainflow_execute},
     {"host_echo", adapter::host_echo::host_echo_execute},
+    {"mesh_import", adapter::mesh_import::mesh_import_execute},
 };
 
 std::string manifestPathForSkill(const std::string& root, const std::string& skill_id) {

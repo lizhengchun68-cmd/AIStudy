@@ -31,6 +31,43 @@ StatusOr<ArtifactMeta> parseHandleEntry(const std::string& handle_id,
 StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>> parseContextObject(
     const Poco::JSON::Object::Ptr& context_obj);
 
+/** @brief Parsed context with validation detail for API error.message (M5b). */
+struct ContextParseResult {
+    bool ok() const noexcept { return success_; }
+    const std::string& context_id() const { return context_id_; }
+    const std::vector<ArtifactMeta>& inbound_handles() const { return inbound_handles_; }
+    const ErrorCodeWrapper& error() const { return error_; }
+    const std::string& detail() const { return detail_; }
+
+    static ContextParseResult success(std::string context_id,
+                                      std::vector<ArtifactMeta> inbound);
+    static ContextParseResult failure(const std::string& detail);
+
+private:
+    bool success_ = false;
+    std::string context_id_;
+    std::vector<ArtifactMeta> inbound_handles_;
+    ErrorCodeWrapper error_;
+    std::string detail_;
+
+    ContextParseResult(bool success,
+                       std::string context_id,
+                       std::vector<ArtifactMeta> inbound,
+                       ErrorCodeWrapper error,
+                       std::string detail);
+};
+
+ContextParseResult parseContextObjectDetailed(const Poco::JSON::Object::Ptr& context_obj);
+
+/** @brief "path: reason" format for validation / store API error.message (M5b). */
+std::string formatValidationDetail(const std::string& path, const std::string& reason);
+
+/** @brief Human-readable reason when context_id fails isValidContextId. */
+std::string describeInvalidContextId(const std::string& context_id);
+
+/** @brief Human-readable reason when handle_id fails isValidHandleId. */
+std::string describeInvalidHandleId(const std::string& handle_id);
+
 } // namespace scheduler
 } // namespace AIstudy
 

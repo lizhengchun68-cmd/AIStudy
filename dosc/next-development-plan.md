@@ -46,7 +46,7 @@
 | 契约测试 | 每 Skill `tests/*.json` + GTest | rainflow：`request_ok`、enum/未知字段/空数组负例 + `skill_registry_test`（manifest 缺失/非法） | 其它 Skill 待补 golden；无远程 CI 时以本地 `ctest` 为门禁 |
 | 结构化日志 | `request_id` + `skill_id` + `duration_ms` | `AIstudy.Dispatcher` 入口/出口日志；可 grep `request_id` | ✅ M3 |
 | `health` | 路线图 §4.4 | CLI `--health` JSON（`skills_loaded`、`checks`） | ✅ M3 |
-| `context` / `options` | 协议预留 | `options.timeout_ms` 已解析（M3）；`context` **M5a 设计+句柄校验**，M5b Store/信封解析 | FEM 多步见 `context-and-handles-design.md` |
+| `context` / `options` | 协议预留 | `options` M3；`context` M5b Store + `mesh_import` | ✅ 见 `context-and-handles-design.md` |
 | 注册失败策略 | manifest 缺失应可见 | 失败记入 `load_errors` + 日志/stderr | ✅ 已实现 |
 | Skill 扩展 | 自动发现 / 代码生成 | `kBindings` + `skill_registry_bindings.txt`；CMake 校验与 `skills/` 一致；样板 `host_echo` | 全量 codegen 仍待 M4+ |
 | FEM 领域 Skill | 网格/求解/结果 | 仅 rainflow 练习模块 | 产品主线未启动 |
@@ -191,12 +191,12 @@ flowchart LR
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| 解析 `context` | `skill_protocol`：`SkillEnvelope` 增加 `context_id`、`inbound_handles`；`parseSkillEnvelope` 调 `parseContextObject` | 带/不带 `context` 行为可测 |
-| Context Store 实现 | `skill_context_store.cpp`：`ensureContext` / `put` / `get` / `mergeInbound` | `context_store_test` 同 context 两次 put/get |
-| Dispatcher 集成 | `execute` 入口 merge inbound；日志 `context_id=` | rainflow 无 context 回归通过 |
-| 句柄错误 message | 校验失败走 `messageOverride`（字段路径） | 与 M2 一致 |
-| 首个 FEM Skill | `mesh_import`（或 `artifact_register`）manifest + adapter stub + kernel 占位 | `--list` ≥3；契约 `request_ok` |
-| artifact 目录 | `.aistudy/artifacts/<context_id>/` 约定落地 | 设计 §6 |
+| 解析 `context` | `skill_protocol`：`SkillEnvelope` 增加 `context_id`、`inbound_handles` | ✅ `SkillProtocol.ParsesEnvelopeContext` |
+| Context Store 实现 | `skill_context_store.cpp` + `skill_artifact_paths` | ✅ `context_store_test` |
+| Dispatcher 集成 | merge inbound + `context_id` 日志 + `skill_execution_context` | ✅ `ContextWorkflow.TwoStepShareContextId` |
+| 句柄错误 message | `parseContextObjectDetailed` + `lastEnvelopeValidationDetail` | ✅ 字段路径进 `error.message` |
+| 首个 FEM Skill | `mesh_import` manifest + adapter + kernel stub | ✅ `MeshImportContract`；`--list` ≥3 |
+| artifact 目录 | `.aistudy/artifacts/<context_id>/` | ✅ `ensureArtifactContextDir` |
 
 **迭代 3 验收（M5 整体）：** 文档化两步流（注册 `file_` → 产出 `mesh_`）无需在 payload 重复传大对象。
 

@@ -4,6 +4,8 @@
 
 #include "scheduler/context_handle_rules.h"
 
+using AIstudy::scheduler::parseContextObjectDetailed;
+
 using AIstudy::scheduler::HandleKind;
 using AIstudy::scheduler::handleKindFromPrefix;
 using AIstudy::scheduler::isValidContextId;
@@ -56,4 +58,12 @@ TEST(ContextHandleRules, RejectsContextWithoutId) {
     Poco::JSON::Object::Ptr ctx(new Poco::JSON::Object);
     ctx->set("handles", Poco::JSON::Object::Ptr(new Poco::JSON::Object));
     EXPECT_FALSE(parseContextObject(ctx).ok());
+}
+
+TEST(ContextHandleRules, ParseContextDetailedIncludesFieldPath) {
+    Poco::JSON::Object::Ptr ctx(new Poco::JSON::Object);
+    ctx->set("context_id", "");
+    const auto r = parseContextObjectDetailed(ctx);
+    ASSERT_FALSE(r.ok());
+    EXPECT_NE(r.detail().find("context.context_id"), std::string::npos);
 }

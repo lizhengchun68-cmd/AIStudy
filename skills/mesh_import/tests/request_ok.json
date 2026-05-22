@@ -1,0 +1,11 @@
+{
+  "protocol": "1",
+  "skill_id": "mesh_import",
+  "context": {
+    "context_id": "test-session-m5b"
+  },
+  "payload": {
+    "source_path": "model.inp",
+    "mesh_handle": "mesh_main"
+  }
+}

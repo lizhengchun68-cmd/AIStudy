@@ -6,22 +6,36 @@
 #include "common/status/exception/error_codes.h"
 #include "scheduler/skill_payload_validator.h"
 #include "scheduler/skill_protocol.h"
+#include "scheduler/skill_context_store.h"
+#include "scheduler/skill_execution_context.h"
 #include "scheduler/skill_registry.h"
+#include "scheduler/context_store_errors.h"
 #include <Poco/Format.h>
 #include <Poco/JSON/Array.h>
 #include <Poco/JSON/Object.h>
 #include <Poco/JSON/Parser.h>
 #include <Poco/JSON/Stringifier.h>
 #include <chrono>
+#include <memory>
 #include <sstream>
 
 namespace AIstudy {
 namespace scheduler {
 namespace {
 
-void logExecuteBegin(const std::string& request_id, const std::string& skill_id, int timeout_ms) {
+void logExecuteBegin(const std::string& request_id,
+                   const std::string& skill_id,
+                   int timeout_ms,
+                   const std::string& context_id) {
     auto log = common::logger::Logger::get("AIstudy.Dispatcher");
-    log.info(Poco::format("execute begin request_id=%s skill_id=%s", request_id, skill_id));
+    if (context_id.empty()) {
+        log.info(Poco::format("execute begin request_id=%s skill_id=%s", request_id, skill_id));
+    } else {
+        log.info(Poco::format("execute begin request_id=%s skill_id=%s context_id=%s",
+                              request_id,
+                              skill_id,
+                              context_id));
+    }
     if (timeout_ms > 0) {
         log.info(Poco::format(
             "options.timeout_ms=%d (reserved: not enforced; logged only)", timeout_ms));
@@ -43,6 +57,10 @@ void logExecuteEnd(const std::string& request_id,
         error_code,
         error_category));
 }
+
+struct ActiveContextScope {
+    ~ActiveContextScope() { skill_execution_context::clearActiveContext(); }
+};
 
 int parseResponseSummary(const std::string& response_json, bool* ok_out, int* error_code_out,
                          std::string* error_category_out) {
@@ -99,8 +117,9 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
 
     const auto envelopeRes = parseSkillEnvelope(envelope_json);
     if (!envelopeRes.ok()) {
-        const std::string response =
-            makeSkillApiFailureResponse(envelopeRes.status(), "", ApiResponseMeta{});
+        const std::string detail = lastEnvelopeValidationDetail();
+        const std::string response = makeSkillApiFailureResponse(
+            envelopeRes.status(), "", ApiResponseMeta{}, detail);
         const int duration_ms = static_cast<int>(
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - wall_start)
@@ -111,7 +130,42 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
     }
 
     const SkillEnvelope& envelope = envelopeRes.value();
-    logExecuteBegin(envelope.request_id, envelope.skill_id, envelope.timeout_ms);
+    logExecuteBegin(envelope.request_id, envelope.skill_id, envelope.timeout_ms, envelope.context_id);
+
+    std::unique_ptr<ActiveContextScope> context_scope;
+    if (!envelope.context_id.empty()) {
+        auto& store = ContextStore::instance();
+        const auto ensured = store.ensureContext(envelope.context_id);
+        if (!ensured.ok()) {
+            const std::string& detail = lastContextStoreDetail();
+            const std::string response = makeSkillApiFailureResponse(
+                ensured.status(), envelope.request_id, ApiResponseMeta{}, detail);
+            const int duration_ms = static_cast<int>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - wall_start)
+                    .count());
+            logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, false,
+                          ensured.status().code(), ensured.status().category());
+            return response;
+        }
+        if (!envelope.inbound_handles.empty()) {
+            const auto merged = store.mergeInbound(envelope.context_id, envelope.inbound_handles);
+            if (!merged.ok()) {
+                const std::string& detail = lastContextStoreDetail();
+                const std::string response = makeSkillApiFailureResponse(
+                    merged.status(), envelope.request_id, ApiResponseMeta{}, detail);
+                const int duration_ms = static_cast<int>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - wall_start)
+                        .count());
+                logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, false,
+                              merged.status().code(), merged.status().category());
+                return response;
+            }
+        }
+        skill_execution_context::setActiveContext(envelope.context_id);
+        context_scope = std::make_unique<ActiveContextScope>();
+    }
 
     const SkillEntry* entry = findSkill(envelope.skill_id);
     if (!entry) {
@@ -171,8 +225,13 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
     meta.duration_ms = static_cast<int>(
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
 
-    const std::string response =
-        makeSkillApiResponse(skill_result, envelope.request_id, meta);
+    std::string response;
+    if (!skill_result.ok() && !lastContextStoreDetail().empty()) {
+        response = makeSkillApiFailureResponse(
+            skill_result.status(), envelope.request_id, meta, lastContextStoreDetail());
+    } else {
+        response = makeSkillApiResponse(skill_result, envelope.request_id, meta);
+    }
 
     bool ok = false;
     int error_code = 0;

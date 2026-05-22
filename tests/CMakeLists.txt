@@ -6,6 +6,9 @@ add_executable(aistudy_tests
     skill_host_health_test.cpp
     host_echo_contract_test.cpp
     context_handle_rules_test.cpp
+    context_store_test.cpp
+    dispatcher_context_error_test.cpp
+    mesh_import_contract_test.cpp
 )
 
 
