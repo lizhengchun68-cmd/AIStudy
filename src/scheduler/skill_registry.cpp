@@ -40,9 +40,12 @@ std::string projectRootPath() {
 }
 
 void registerBuiltinSkills(Dispatcher& dispatcher) {
-    const std::string root = projectRootPath();
+    registerBuiltinSkills(dispatcher, projectRootPath());
+}
+
+void registerBuiltinSkills(Dispatcher& dispatcher, const std::string& project_root) {
     for (const auto& binding : kBindings) {
-        const std::string path = manifestPathForSkill(root, binding.id);
+        const std::string path = manifestPathForSkill(project_root, binding.id);
         auto manifestRes = loadSkillManifest(path);
         if (!manifestRes.ok()) {
             SkillLoadFailure failure;

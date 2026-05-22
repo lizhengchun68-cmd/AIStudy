@@ -70,6 +70,42 @@ TEST(RainflowContract, InvalidMethodFailsAtScheduler) {
     EXPECT_EQ(actualObj->getValue<std::string>("protocol"), "1");
 }
 
+TEST(RainflowContract, UnknownPayloadFieldFailsAtScheduler) {
+    auto dispatcher = makeDispatcher();
+    const std::string request =
+        aistudy_test::readTextFile(rainflowTestsDir() + "/request_unknown_field.json");
+
+    const std::string actual = dispatcher.execute(request);
+    auto actualObj = aistudy_test::parseJsonObject(actual);
+    aistudy_test::stripVolatileResponseFields(actualObj);
+
+    ASSERT_FALSE(actualObj->getValue<bool>("ok"));
+    auto actualErr = actualObj->getObject("error");
+    EXPECT_EQ(actualErr->getValue<std::string>("category"), "validation");
+    EXPECT_EQ(actualErr->getValue<int>("code"),
+              static_cast<int>(AIstudy::ValidationError::CONSTRAINT_VIOLATION));
+    EXPECT_EQ(actualErr->getValue<std::string>("message"),
+              "typo_field: additional property not allowed");
+}
+
+TEST(RainflowContract, EmptyLoadHistoryFailsAtScheduler) {
+    auto dispatcher = makeDispatcher();
+    const std::string request =
+        aistudy_test::readTextFile(rainflowTestsDir() + "/request_empty_load_history.json");
+
+    const std::string actual = dispatcher.execute(request);
+    auto actualObj = aistudy_test::parseJsonObject(actual);
+    aistudy_test::stripVolatileResponseFields(actualObj);
+
+    ASSERT_FALSE(actualObj->getValue<bool>("ok"));
+    auto actualErr = actualObj->getObject("error");
+    EXPECT_EQ(actualErr->getValue<std::string>("category"), "validation");
+    EXPECT_EQ(actualErr->getValue<int>("code"),
+              static_cast<int>(AIstudy::ValidationError::CONSTRAINT_VIOLATION));
+    EXPECT_EQ(actualErr->getValue<std::string>("message"),
+              "load_history: array has too few items");
+}
+
 TEST(SkillRegistry, ListIncludesRainflowWhenManifestPresent) {
     auto dispatcher = makeDispatcher();
     const std::string listJson = dispatcher.listSkillsJson();

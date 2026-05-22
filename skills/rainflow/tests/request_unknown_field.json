@@ -1,0 +1,9 @@
+{
+  "protocol": "1",
+  "skill_id": "rainflow",
+  "payload": {
+    "load_history": [1, 2, 3],
+    "method": "ThreePoint",
+    "typo_field": true
+  }
+}

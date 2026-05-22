@@ -31,7 +31,7 @@
 | 协议 v1 文档 | `dosc/skill-protocol-v1.md`（规范态，无遗留格式） |
 | 调度入口 | `Dispatcher::execute`、`registerSkill`、`skill_registry` 静态表 |
 | 信封解析 | `skill_protocol`（必填 `protocol: "1"`、`skill_id`、`payload`） |
-| 调度前校验 | `skill_payload_validator`（manifest `required` 字段） |
+| 调度前校验 | `skill_payload_validator`（aistudy-schema-v1 子集 + 字段路径 `error.message`） |
 | 统一错误模型 | `StatusOr` + `api_response`（v1 `ok`/`error`/`meta`） |
 | 发现能力 | CLI：`AIstudy --list`、`--describe <skill_id>`、stdin `execute` |
 | 横切库 | `common/status`、`common/io`（json/hdf5）、`common/logger` 已接入构建 |
@@ -42,8 +42,8 @@
 |----|-----------|----------|------|
 | 仅 protocol v1 | `skill-protocol-v1.md` 要求 `protocol: "1"` 必填 | `parseSkillEnvelope` 强制 `protocol == "1"`；响应仅 `ok`/`meta` | ✅ 已收敛 |
 | 信封字段 | 仅 `skill_id` | 已移除 `task_type`；解析层仅认 `skill_id` | 路线图 v1.4 已同步 |
-| JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | `skill_payload_validator` 子集（type/enum/minimum/properties/items） | 复杂 schema（oneOf 等）仍待扩展 |
-| 契约测试 | 每 Skill `tests/*.json` + GTest | `tests/` + `skills/rainflow/tests/` + `rainflow_contract_test` | 其它 Skill 待补 golden |
+| JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | **aistudy-schema-v1** 子集：`required`/`type`/`enum`/`minimum`/`maximum`/`properties`/`items`/`additionalProperties`/`minItems`/`maxItems`；失败时 `error.message` 含字段路径 | `oneOf`/`anyOf`/`pattern`/`default` 应用等仍待扩展；`default`/`description` 仅文档 |
+| 契约测试 | 每 Skill `tests/*.json` + GTest | rainflow：`request_ok`、enum/未知字段/空数组负例 + `skill_registry_test`（manifest 缺失/非法） | 其它 Skill 待补 golden；无远程 CI 时以本地 `ctest` 为门禁 |
 | 结构化日志 | `request_id` + `skill_id` + `duration_ms` | scheduler **未** 调用 `common/logger` | 难排查生产问题 |
 | `health` | 路线图 §4.4 | 未实现 | 部署/探活缺失 |
 | `context` / `options` | 协议预留 | **未解析** | FEM 多步前需设计 |
@@ -119,8 +119,8 @@ flowchart LR
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
 | rainflow 契约测试 | `skills/rainflow/tests/`：`request.json` + `expected_ok.json` / `expected_error.json` | ✅ GTest `rainflow_contract_test`（忽略 `request_id`/`duration_ms`） |
-| 加强 payload 校验 | 在 `skill_payload_validator` 或 `common/io/json` 上增加：类型、enum、`minimum` 等（可先子集 JSON Schema） | ✅ 子集 Schema；非法 `method` enum 调度层 `category=validation` |
-| manifest 加载失败可观测 | `registerBuiltinSkills`：失败时日志/启动警告；可选 `--list` 显示 `load_error` | ✅ 日志 + stderr 警告 + `--list` 的 `load_errors` |
+| 加强 payload 校验 | aistudy-schema-v1 子集 + 字段级 `error.message` | ✅ 已实现；含 `additionalProperties`/`minItems` 与 rainflow 负例 GTest |
+| manifest 加载失败可观测 | 失败记入 `load_errors` + 日志/stderr + GTest | ✅ `SkillRegistry.RecordsLoadFailureWhenManifestMissing` + `SkillManifestLoad.RejectsManifestWithoutId` |
 | 删除重复 schema 源 | 以 manifest 为唯一契约 | ✅ 已删除 `rainflow.schema.json` |
 
 **依赖：** M1（测试断言基于 v1 响应）。  

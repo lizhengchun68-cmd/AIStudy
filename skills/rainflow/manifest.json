@@ -6,11 +6,13 @@
   "tags": ["fatigue", "signal"],
   "input_schema": {
     "type": "object",
+    "additionalProperties": false,
     "properties": {
       "load_history": {
         "type": "array",
+        "minItems": 1,
         "items": { "type": "number" },
-        "description": "载荷时间历程序列"
+        "description": "载荷时间历程序列（Host 不应用 default，至少 1 个点）"
       },
       "method": {
         "type": "string",
@@ -19,10 +21,12 @@
       },
       "params": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "threshold": { "type": "number", "default": 0.0 },
           "grads": { "type": "integer", "default": 100, "minimum": 1 }
-        }
+        },
+        "description": "可选算法参数（default 仅文档；由 adapter 缺省）"
       }
     },
     "required": ["load_history", "method"]
