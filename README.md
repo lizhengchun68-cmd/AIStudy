@@ -1,5 +1,7 @@
 # AIStudy
 
+[![CI](https://github.com/lizhengchun68-cmd/AIStudy/actions/workflows/ci.yml/badge.svg)](https://github.com/lizhengchun68-cmd/AIStudy/actions/workflows/ci.yml)
+
 面向 Agent 调度的 **Skill Host** 与有限元仿真分层代码库：内核（`kernel`）→ 适配（`adapter`）→ 调度（`scheduler`），对外仅通过 JSON 协议与字符串句柄交互，无裸指针出进程。
 
 当前内置 Skill：`rainflow`（雨流计数）、`host_echo`（探活样板）、`mesh_import`（M5 会话/句柄样板，非真实网格导入）。
@@ -62,12 +64,14 @@ manifest 加载失败时，stderr 会输出 `[AIstudy] WARNING: failed to load s
 ## 本地测试
 
 ```powershell
+cmake -S . -B build -DAISTUDY_BUILD_TESTS=ON
 cmake --build build --config Release
-cd build
-ctest -C Release
+ctest --test-dir build -C Release --output-on-failure
 ```
 
-契约测试覆盖 rainflow golden、payload 校验负例、registry 加载失败、`--health`、context/句柄与 `mesh_import` 等（当前以本地 `ctest` 为质量门禁）。
+契约测试覆盖 rainflow golden、payload 校验负例、registry 加载失败、`--health`、context/句柄与 `mesh_import` 等。
+
+**GitHub Actions：** push/PR 到 `main` / `master` / `zcli/fea_dev` 时自动跑上述流程（见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)）。需将 `thirdparty/` 预编译依赖一并提交到仓库（Poco / GTest / HDF5）。
 
 ---
 

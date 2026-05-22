@@ -42,13 +42,15 @@ Get-Content skills\rainflow\tests\request_ok.json -Raw | .\build\src\Release\AIs
 
 **说明**：`options.timeout_ms` 已解析并写日志，**尚未**实现取消/超时中断（预留 M6+）。
 
-## 5. 本地回归（无 CI）
+## 5. 回归测试（本地与 CI）
 
 ```powershell
+cmake -S . -B build -DAISTUDY_BUILD_TESTS=ON
 cmake --build build --config Release
-cd build
-ctest -C Release
+ctest --test-dir build -C Release --output-on-failure
 ```
+
+GitHub Actions：仓库根 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)，在 `main` / `master` / `zcli/fea_dev` 上自动执行相同步骤。
 
 ## 6. 常见问题
 

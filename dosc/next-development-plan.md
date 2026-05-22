@@ -241,7 +241,7 @@ flowchart LR
 1. **M2** rainflow golden 测试 + manifest 加载失败告警  
 2. **M3** 结构化日志 + `--health`（M1 协议/API/common_status 路径已收敛）  
 
-**迭代 1 验收：** 外部 Agent 仅读 `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe`，即可完成成功/失败调用；CI 跑通 rainflow 契约测试。
+**迭代 1 验收：** 外部 Agent 仅读 `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe`，即可完成成功/失败调用；CI 跑通 rainflow 契约测试（✅ `.github/workflows/ci.yml`：Windows + `ctest -C Release` 全量契约）。
 
 ### 迭代 2：可运维 + 扩展套路
 
