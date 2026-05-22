@@ -71,9 +71,17 @@ ctest --test-dir build -C Release --output-on-failure
 
 契约测试覆盖 rainflow golden、payload 校验负例、registry 加载失败、`--health`、context/句柄与 `mesh_import` 等。
 
-**GitHub Actions：** push/PR 到 `main` / `master` / `zcli/fea_dev` 时自动跑上述流程（见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)）。需将 `thirdparty/` 预编译依赖一并提交到仓库（Poco / GTest / HDF5）。
+**GitHub Actions（开发阶段分支策略）：**
 
-查看运行状态：仓库 **Actions** → 选中 Run → 各步骤有中文标题；展开日志中的 `::group::` 块可看 Configure/Build/ctest 详情；失败时下载 **ctest-logs** 构件，或在 Run 页底部看 **Job summary**。
+| 流向 | 是否跑 CI |
+|------|-----------|
+| `zcli/fea_dev` → `group/fea_dev`（PR） | ✅ |
+| `group/fea_dev` → `dev/fea_dev`（PR） | ✅ |
+| 直接 push 到 `zcli/fea_dev` 或其它分支 | ❌ |
+
+配置见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)；也可在 Actions 页 **Run workflow** 手动触发。需将 `thirdparty/` 预编译依赖一并提交到仓库。
+
+查看运行状态：仓库 **Actions** → 选中 Run → 各步骤有中文标题；日志开头会打印 `PR: 源分支 -> 目标分支`。
 
 ---
 

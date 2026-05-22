@@ -1,21 +1,19 @@
 # Build and run contract tests on Windows (MSVC), matching local dev workflow.
+#
+# Branch flow (dev stage):
+#   zcli/fea_dev  --PR-->  group/fea_dev  --PR-->  dev/fea_dev
+# CI runs only on those two PRs (not on push to personal branch).
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - master
-      - zcli/fea_dev
   pull_request:
     branches:
-      - main
-      - master
-      - zcli/fea_dev
+      - group/fea_dev
+      - dev/fea_dev
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 defaults:
@@ -27,6 +25,12 @@ jobs:
     name: Windows / MSVC / ctest
     runs-on: windows-latest
     timeout-minutes: 30
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.base_ref == 'group/fea_dev' && github.head_ref == 'zcli/fea_dev') ||
+      (github.event_name == 'pull_request' &&
+       github.base_ref == 'dev/fea_dev' && github.head_ref == 'group/fea_dev')
 
     steps:
       - name: Checkout
@@ -39,7 +43,11 @@ jobs:
           Write-Host "CI 开始  $now"
           Write-Host "Workflow : ${{ github.workflow }}"
           Write-Host "Run ID   : ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
-          Write-Host "Ref      : ${{ github.ref }}"
+          Write-Host "Event    : ${{ github.event_name }}"
+          if ('${{ github.event_name }}' -eq 'pull_request') {
+            Write-Host "PR       : ${{ github.head_ref }} -> ${{ github.base_ref }}"
+            Write-Host "PR #     : ${{ github.event.pull_request.number }}"
+          }
           Write-Host "SHA      : ${{ github.sha }}"
           Write-Host "Actor    : ${{ github.actor }}"
           Write-Host "Runner   : $env:RUNNER_OS $env:RUNNER_ARCH"
@@ -162,7 +170,7 @@ jobs:
           | 项 | 值 |
           |----|-----|
           | Run | [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
-          | 分支 | ``${{ github.ref_name }}`` |
+          | PR | ``${{ github.head_ref }}`` → ``${{ github.base_ref }}`` |
           | 提交 | ``${{ github.sha }}`` |
           | 触发 | ${{ github.event_name }} |
 

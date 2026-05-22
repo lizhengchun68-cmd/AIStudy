@@ -41,3 +41,7 @@ flowchart TB
 - **协议字段、错误格式** → 只改 `skill-protocol-v1.md`，其它文档引用链接。  
 - **里程碑是否完成** → 改 `next-development-plan.md` + 路线图 §6 状态表。  
 - **句柄规则细节** → `context-and-handles-design.md` + `src/scheduler/context_handle_rules.*`。
+
+## CI 触发（开发分支）
+
+仅 PR：`zcli/fea_dev` → `group/fea_dev`，`group/fea_dev` → `dev/fea_dev`。个人分支 push 不跑 CI。

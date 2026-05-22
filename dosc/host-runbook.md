@@ -50,7 +50,10 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-GitHub Actions：仓库根 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)，在 `main` / `master` / `zcli/fea_dev` 上自动执行相同步骤。
+GitHub Actions：仓库根 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)。**仅**在以下 PR 时自动执行（push 到 `zcli/fea_dev` 不触发）：
+
+- `zcli/fea_dev` → `group/fea_dev`
+- `group/fea_dev` → `dev/fea_dev`
 
 **如何查看 CI 进度：** GitHub → Actions → 当前 Run。步骤顺序为：运行信息 → 依赖检查 → Configure → Build → 枚举测试 → ctest。日志使用 `::group::` 折叠长输出；测试失败会附带 `LastTest.log` 尾部并上传 **ctest-logs** 构件。Run 页 **Summary** 有结果表格与本地复现命令。也可在 Actions 页手动 **Run workflow**（`workflow_dispatch`）。
 

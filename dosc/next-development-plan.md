@@ -241,7 +241,7 @@ flowchart LR
 
 - **M2** rainflow golden + manifest 加载失败可观测  
 - **M3** 结构化日志 + `--health`  
-- **验收：** `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe` 可完成成功/失败调用；[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) 在 `main` / `master` / `zcli/fea_dev` 上跑 `ctest -C Release`
+- **验收：** `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe` 可完成成功/失败调用；CI 在 PR `zcli/fea_dev`→`group/fea_dev` 与 `group/fea_dev`→`dev/fea_dev` 上跑 `ctest -C Release`（见 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)）
 
 ### 迭代 2：可运维 + 扩展套路 — ✅ 已完成
 
