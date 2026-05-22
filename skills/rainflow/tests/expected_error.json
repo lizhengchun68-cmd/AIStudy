@@ -1,0 +1,7 @@
+{
+  "protocol": "1",
+  "ok": false,
+  "error": {
+    "category": "validation"
+  }
+}

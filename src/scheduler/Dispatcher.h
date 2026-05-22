@@ -6,9 +6,17 @@
 #include <Poco/JSON/Object.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace AIstudy {
 namespace scheduler {
+
+/** @brief 内置 Skill 注册失败记录（manifest 缺失或解析失败） */
+struct SkillLoadFailure {
+    std::string binding_id;
+    std::string manifest_path;
+    std::string error;
+};
 
 /** @brief Skill 执行结果：成功时为写�?API `result` 字段�?JSON 对象 */
 using SkillResultJson = Poco::JSON::Object::Ptr;
@@ -33,6 +41,9 @@ public:
     /** @brief 返回 manifest 描述 JSON */
     std::string describeSkillJson(const std::string& skill_id) const;
 
+    void recordLoadFailure(SkillLoadFailure failure);
+    const std::vector<SkillLoadFailure>& loadFailures() const { return load_failures_; }
+
 private:
     struct SkillEntry {
         SkillExecuteFunc func;
@@ -40,6 +51,7 @@ private:
     };
 
     std::unordered_map<std::string, SkillEntry> registry_;
+    std::vector<SkillLoadFailure> load_failures_;
 
     const SkillEntry* findSkill(const std::string& skill_id) const;
 };

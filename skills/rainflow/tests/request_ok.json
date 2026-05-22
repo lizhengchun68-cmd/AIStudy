@@ -1,0 +1,9 @@
+{
+  "protocol": "1",
+  "skill_id": "rainflow",
+  "payload": {
+    "load_history": [1, 2, 3, 2, 1],
+    "method": "ThreePoint",
+    "params": { "threshold": 0.2, "grads": 50 }
+  }
+}

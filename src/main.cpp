@@ -28,6 +28,12 @@ int main(int argc, char* argv[]) {
     scheduler::Dispatcher dispatcher;
     scheduler::registerBuiltinSkills(dispatcher);
 
+    for (const auto& failure : dispatcher.loadFailures()) {
+        std::cerr << "[AIstudy] WARNING: failed to load skill '" << failure.binding_id
+                  << "' from " << failure.manifest_path << ": " << failure.error
+                  << std::endl;
+    }
+
     if (argc >= 2) {
         const std::string arg1 = argv[1];
         if (arg1 == "--list" || arg1 == "-list") {

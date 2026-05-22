@@ -1,0 +1,12 @@
+{
+  "protocol": "1",
+  "ok": true,
+  "result": {
+    "items": [],
+    "num_cycles": 0
+  },
+  "meta": {
+    "skill_id": "rainflow",
+    "skill_version": "1.0.0"
+  }
+}

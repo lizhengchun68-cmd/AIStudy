@@ -26,6 +26,7 @@ target_link_libraries(scheduler
     PUBLIC
         adapter
         common_status
+        common_logger
 )
 
 if(TARGET PocoJSON::PocoJSON)

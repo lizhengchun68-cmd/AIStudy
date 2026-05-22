@@ -42,12 +42,12 @@
 |----|-----------|----------|------|
 | 仅 protocol v1 | `skill-protocol-v1.md` 要求 `protocol: "1"` 必填 | `parseSkillEnvelope` 强制 `protocol == "1"`；响应仅 `ok`/`meta` | ✅ 已收敛 |
 | 信封字段 | 仅 `skill_id` | 已移除 `task_type`；解析层仅认 `skill_id` | 路线图 v1.4 已同步 |
-| JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | 仅 `required` 存在性 | 类型/enum 错误仍在 adapter 才暴露 |
-| 契约测试 | 每 Skill `tests/*.json` + GTest | `tests/` + `AISTUDY_BUILD_TESTS`（示例：`skill_protocol_test`） | rainflow golden 用例待补 |
+| JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | `skill_payload_validator` 子集（type/enum/minimum/properties/items） | 复杂 schema（oneOf 等）仍待扩展 |
+| 契约测试 | 每 Skill `tests/*.json` + GTest | `tests/` + `skills/rainflow/tests/` + `rainflow_contract_test` | 其它 Skill 待补 golden |
 | 结构化日志 | `request_id` + `skill_id` + `duration_ms` | scheduler **未** 调用 `common/logger` | 难排查生产问题 |
 | `health` | 路线图 §4.4 | 未实现 | 部署/探活缺失 |
 | `context` / `options` | 协议预留 | **未解析** | FEM 多步前需设计 |
-| 注册失败策略 | manifest 缺失应可见 | `registerBuiltinSkills` 加载失败 **静默 skip** | 部署路径错误时 Skill 消失且无告警 |
+| 注册失败策略 | manifest 缺失应可见 | 失败记入 `load_errors` + 日志/stderr | ✅ 已实现 |
 | Skill 扩展 | 自动发现 / 代码生成 | 手工维护 `kBindings[]` | Skill 增多后易漏注册 |
 | FEM 领域 Skill | 网格/求解/结果 | 仅 rainflow 练习模块 | 产品主线未启动 |
 
@@ -118,9 +118,9 @@ flowchart LR
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| rainflow 契约测试 | `skills/rainflow/tests/`：`request.json` + `expected_ok.json` / `expected_error.json` | CI 或本地脚本对比 `execute` 输出（可允许 `request_id` 字段忽略） |
-| 加强 payload 校验 | 在 `skill_payload_validator` 或 `common/io/json` 上增加：类型、enum、`minimum` 等（可先子集 JSON Schema） | manifest 中 `method` 非法 enum 在调度层失败，错误 `category=validation` |
-| manifest 加载失败可观测 | `registerBuiltinSkills`：失败时日志/启动警告；可选 `--list` 显示 `load_error` | manifest 路径错误时 `--list` 可见异常 |
+| rainflow 契约测试 | `skills/rainflow/tests/`：`request.json` + `expected_ok.json` / `expected_error.json` | ✅ GTest `rainflow_contract_test`（忽略 `request_id`/`duration_ms`） |
+| 加强 payload 校验 | 在 `skill_payload_validator` 或 `common/io/json` 上增加：类型、enum、`minimum` 等（可先子集 JSON Schema） | ✅ 子集 Schema；非法 `method` enum 调度层 `category=validation` |
+| manifest 加载失败可观测 | `registerBuiltinSkills`：失败时日志/启动警告；可选 `--list` 显示 `load_error` | ✅ 日志 + stderr 警告 + `--list` 的 `load_errors` |
 | 删除重复 schema 源 | 以 manifest 为唯一契约 | ✅ 已删除 `rainflow.schema.json` |
 
 **依赖：** M1（测试断言基于 v1 响应）。  

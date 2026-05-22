@@ -14,6 +14,10 @@
 namespace AIstudy {
 namespace scheduler {
 
+void Dispatcher::recordLoadFailure(SkillLoadFailure failure) {
+    load_failures_.push_back(std::move(failure));
+}
+
 void Dispatcher::registerSkill(const SkillManifest& manifest, SkillExecuteFunc func) {
     SkillEntry entry;
     entry.func = func;
@@ -89,6 +93,17 @@ std::string Dispatcher::listSkillsJson() const {
         skills->add(item);
     }
     root->set("skills", skills);
+    if (!load_failures_.empty()) {
+        Poco::JSON::Array::Ptr errors(new Poco::JSON::Array);
+        for (const auto& f : load_failures_) {
+            Poco::JSON::Object::Ptr item(new Poco::JSON::Object);
+            item->set("id", f.binding_id);
+            item->set("manifest_path", f.manifest_path);
+            item->set("load_error", f.error);
+            errors->add(item);
+        }
+        root->set("load_errors", errors);
+    }
     std::ostringstream oss;
     Poco::JSON::Stringifier::condense(root, oss);
     return oss.str();
