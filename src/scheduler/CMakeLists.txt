@@ -23,6 +23,8 @@ add_library(scheduler STATIC
     skill_artifact_paths.h
     skill_execution_context.cpp
     skill_execution_context.h
+    context_close_handler.cpp
+    context_close_handler.h
 )
 
 target_include_directories(scheduler

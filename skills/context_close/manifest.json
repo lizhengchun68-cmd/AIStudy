@@ -1,0 +1,29 @@
+{
+  "id": "context_close",
+  "version": "1.0.0",
+  "title": "ContextClose",
+  "description": "结束多步会话：释放 Context Store 句柄并删除 artifact 目录",
+  "tags": ["host", "context"],
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "closed": { "type": "boolean" },
+      "context_id": { "type": "string" },
+      "had_session": { "type": "boolean" }
+    },
+    "required": ["closed", "context_id", "had_session"]
+  },
+  "examples": [
+    {
+      "name": "close_session",
+      "input": {}
+    }
+  ],
+  "timeout_ms": 5000,
+  "deprecated": false
+}

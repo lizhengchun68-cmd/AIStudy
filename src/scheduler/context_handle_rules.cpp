@@ -75,9 +75,11 @@ ContextParseResult::ContextParseResult(bool success,
       detail_(std::move(detail)) {}
 
 ContextParseResult ContextParseResult::success(std::string context_id,
-                                             std::vector<ArtifactMeta> inbound) {
-    return ContextParseResult(true, std::move(context_id), std::move(inbound),
-                              ErrorCodeWrapper(), "");
+                                             std::vector<ArtifactMeta> inbound,
+                                             bool context_close) {
+    ContextParseResult r(true, std::move(context_id), std::move(inbound), ErrorCodeWrapper(), "");
+    r.context_close_ = context_close;
+    return r;
 }
 
 ContextParseResult ContextParseResult::failure(const std::string& detail) {
@@ -232,7 +234,16 @@ ContextParseResult parseContextObjectDetailed(const Poco::JSON::Object::Ptr& con
         }
     }
 
-    return ContextParseResult::success(context_id, std::move(handles));
+    bool close_session = false;
+    if (context_obj->has("close")) {
+        if (!context_obj->get("close").isBoolean()) {
+            return ContextParseResult::failure(
+                formatValidationDetail("context.close", "must be boolean"));
+        }
+        close_session = context_obj->getValue<bool>("close");
+    }
+
+    return ContextParseResult::success(context_id, std::move(handles), close_session);
 }
 
 StatusOr<std::pair<std::string, std::vector<ArtifactMeta>>> parseContextObject(

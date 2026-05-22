@@ -44,5 +44,17 @@ bool ensureArtifactContextDir(const std::string& context_id) {
     }
 }
 
+bool removeArtifactContextDir(const std::string& context_id) {
+    try {
+        Poco::File dir(artifactContextDir(context_id));
+        if (dir.exists()) {
+            dir.remove(true);
+        }
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 } // namespace scheduler
 } // namespace AIstudy

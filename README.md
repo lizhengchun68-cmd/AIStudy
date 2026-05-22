@@ -4,7 +4,7 @@
 
 面向 Agent 调度的 **Skill Host** 与有限元仿真分层代码库：内核（`kernel`）→ 适配（`adapter`）→ 调度（`scheduler`），对外仅通过 JSON 协议与字符串句柄交互，无裸指针出进程。
 
-当前内置 Skill：`rainflow`（雨流计数）、`host_echo`（探活样板）、`mesh_import`（M5 会话/句柄样板，非真实网格导入）。
+当前内置 Skill：`rainflow`（雨流计数）、`host_echo`（探活样板）、`mesh_import`（M5 会话/句柄样板，非真实网格导入）、`context_close`（M7a 会话收尾）。
 
 ---
 
@@ -110,7 +110,7 @@ tests/                            # GTest（契约与调度行为）
 | 文档 | 说明 |
 |------|------|
 | [`dosc/skill-protocol-v1.md`](dosc/skill-protocol-v1.md) | 信封与响应格式（**协议真源**） |
-| [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | 里程碑 M1–M7、迭代状态（当前：**M7**） |
+| [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | 里程碑与迭代（当前：**M7a/M7b** + FEM 主线） |
 | [`dosc/host-runtime.md`](dosc/host-runtime.md) | Host 边界、stdio/HTTP、退出码（M6） |
 | [`dosc/host-runbook.md`](dosc/host-runbook.md) | 工作目录、日志 grep `request_id`、常见问题 |
 | [`dosc/context-and-handles-design.md`](dosc/context-and-handles-design.md) | `context_id`、句柄、`artifact://` |

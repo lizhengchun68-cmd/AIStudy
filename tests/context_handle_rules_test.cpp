@@ -60,6 +60,15 @@ TEST(ContextHandleRules, RejectsContextWithoutId) {
     EXPECT_FALSE(parseContextObject(ctx).ok());
 }
 
+TEST(ContextHandleRules, ParseContextCloseMustBeBoolean) {
+    Poco::JSON::Object::Ptr ctx(new Poco::JSON::Object);
+    ctx->set("context_id", "sess-1");
+    ctx->set("close", "yes");
+    const auto r = parseContextObjectDetailed(ctx);
+    ASSERT_FALSE(r.ok());
+    EXPECT_NE(r.detail().find("context.close"), std::string::npos);
+}
+
 TEST(ContextHandleRules, ParseContextDetailedIncludesFieldPath) {
     Poco::JSON::Object::Ptr ctx(new Poco::JSON::Object);
     ctx->set("context_id", "");

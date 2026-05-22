@@ -114,6 +114,7 @@ const Dispatcher::SkillEntry* Dispatcher::findSkill(const std::string& skill_id)
 
 std::string Dispatcher::execute(const std::string& envelope_json) {
     const auto wall_start = std::chrono::steady_clock::now();
+    ContextStore::instance().purgeExpiredContexts();
 
     const auto envelopeRes = parseSkillEnvelope(envelope_json);
     if (!envelopeRes.ok()) {
@@ -248,6 +249,12 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
             .count());
     logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, ok, error_code,
                   error_category);
+
+    context_scope.reset();
+    if (envelope.context_close && !envelope.context_id.empty()) {
+        ContextStore::instance().closeContext(envelope.context_id);
+    }
+
     return response;
 }
 

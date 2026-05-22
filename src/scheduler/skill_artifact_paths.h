@@ -21,6 +21,9 @@ std::string artifactUriToFilesystemPath(const std::string& uri);
 /** @brief Create context artifact directory if missing. */
 bool ensureArtifactContextDir(const std::string& context_id);
 
+/** @brief Remove context artifact directory if present (M7a close/TTL). */
+bool removeArtifactContextDir(const std::string& context_id);
+
 } // namespace scheduler
 } // namespace AIstudy
 

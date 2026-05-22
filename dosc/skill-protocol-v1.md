@@ -89,14 +89,16 @@
 | `context.handles` | 否 | 入站句柄表；键为 `handle_id`（前缀 `mesh_` / `result_` / `file_`） |
 | `handles[<id>].kind` | 建议 | `mesh` / `result` / `file`，须与 `handle_id` 前缀一致 |
 | `handles[<id>].uri` | 建议 | `artifact://<context_id>/...` 或 `file://...` |
+| `context.close` | 否 | 布尔；`true` 时在本请求 Skill **执行结束后**调用 `closeContext`（M7a） |
 
 **行为：**
 
 - 省略 `context`：`rainflow`、`host_echo` 等与 M4 相同，不访问 Context Store。
 - 提供 `context`：Host `ensureContext`、合并 `handles` 入 Store，执行期 adapter 可通过 `skill_execution_context` 读写句柄；artifact 目录为 `<project>/.aistudy/artifacts/<context_id>/`。
 - 需要会话的 Skill（如 `mesh_import`）若未带 `context`，返回 `context: no active context (envelope context required)`。
+- **收尾（M7a）：** Skill `context_close`（`payload: {}`）或 `context.close: true`；Host 亦支持 `AIstudy --drop-context <id>`（仅内存，不删 artifact）。
 
-**多步示例（同一 `context_id`）：** 先 `mesh_import` 注册 `mesh_*`，下一步可在 `context.handles` 中传入该句柄，无需在 `payload` 重复传大对象。详见设计文档 §8 与 `tests/mesh_import_contract_test.cpp` 中 `ContextWorkflow`。
+**多步示例（同一 `context_id`）：** 先 `mesh_import` 注册 `mesh_*`，下一步可在 `context.handles` 中传入该句柄，无需在 `payload` 重复传大对象；结束时 `context_close` 或 `close: true`。详见设计文档 §5.4 与 `tests/context_close_contract_test.cpp`。
 
 ---
 

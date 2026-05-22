@@ -9,7 +9,7 @@
 
 | 属于 Host | 不属于 Host |
 |-----------|-------------|
-| `--list` / `--describe` / `--health` | LLM 推理、多轮对话记忆 |
+| `--list` / `--describe` / `--health` / `--drop-context` | LLM 推理、多轮对话记忆 |
 | stdin **一行** JSON `execute` | 内置 Workflow DAG |
 | `--serve` HTTP JSON API（本地） | 业务算法（在 kernel/adapter） |
 | 加载 `skills/*/manifest.json` | 将 `logger` 注册为 Skill |
@@ -102,7 +102,7 @@ cmake --build build --config Release
 | HTTP | `--serve` + `/v1/*` |
 | MCP | 文档对齐（`mcp-tool-alignment.md`），无独立 MCP 二进制 |
 
-后续 **M7**：异步 job、子进程 Skill、超时强制取消。
+后续 **M7**（见 [`next-development-plan.md`](next-development-plan.md)）：**M7a** 会话收尾 → **M7b** 大结果 handle → **M7c** 异步 job / 超时取消 → **M7d** 子进程（可选）。
 
 ---
 

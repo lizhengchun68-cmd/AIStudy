@@ -19,6 +19,7 @@ void printHelp() {
               << "  --describe <skill_id> Show skill manifest / schema\n"
               << "  --health              Host health probe (JSON)\n"
               << "  --serve [port]        HTTP JSON API on 127.0.0.1 (default 8765)\n"
+              << "  --drop-context <id>   Drop in-memory session (no artifact delete)\n"
               << "  (no arguments)        Read one JSON envelope from stdin, write one line to stdout\n"
               << "Exit codes (execute mode): 0=ok, 1=usage, 2=ok:false, 3=host error\n"
               << "See dosc/host-runtime.md\n";
@@ -56,6 +57,14 @@ int main(int argc, char* argv[]) {
         }
         if (arg1 == "--health" || arg1 == "-health") {
             std::cout << host.healthJson() << std::endl;
+            return toProcessExit(HostExitCode::Success);
+        }
+        if (arg1 == "--drop-context" || arg1 == "-drop-context") {
+            if (argc < 3) {
+                printHelp();
+                return toProcessExit(HostExitCode::UsageError);
+            }
+            std::cout << host.dropContextJson(argv[2]) << std::endl;
             return toProcessExit(HostExitCode::Success);
         }
         if (arg1 == "--serve" || arg1 == "-serve") {

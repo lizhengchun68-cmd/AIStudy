@@ -46,6 +46,21 @@ TEST(SkillProtocol, ParsesEnvelopeContext) {
     EXPECT_EQ(result.value().inbound_handles[0].handle_id, "file_in");
 }
 
+TEST(SkillProtocol, ParsesContextCloseFlag) {
+    const std::string json = R"({
+        "protocol": "1",
+        "skill_id": "host_echo",
+        "context": {
+            "context_id": "sess-close",
+            "close": true
+        },
+        "payload": { "message": "x" }
+    })";
+    const auto result = parseSkillEnvelope(json);
+    ASSERT_TRUE(result.ok());
+    EXPECT_TRUE(result.value().context_close);
+}
+
 TEST(SkillProtocol, ParsesOptionsTimeoutMs) {
     const std::string json = R"({
         "protocol": "1",

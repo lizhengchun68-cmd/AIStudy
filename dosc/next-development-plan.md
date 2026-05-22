@@ -1,6 +1,6 @@
 # AIStudy 下一步开发计划
 
-> 文档版本：1.5  
+> 文档版本：1.6  
 > 日期：2026-05-21  
 > 依据：`dosc/agent-skill-architecture-roadmap.md`（v1.5）、`dosc/skill-protocol-v1.md`、当前仓库实现（M1–M5b、CI）  
 > 性质：**规划文档**，不包含实现任务的具体 PR/分支安排  
@@ -50,7 +50,7 @@
 | 会话生命周期 | 无 TTL / `context_close`；Store 跟进程存活（M7） |
 | `kBindings` 代码生成 | CMake 校验已有；C++ 表仍手工维护 |
 | M6 对外集成 | ✅ stdio 退出码、`host-runtime.md`、HTTP `--serve`；MCP 文档对齐 |
-| M7 规模能力 | 异步 job、子进程 Skill、大结果仅返回 handle |
+| M7 规模能力（平台） | 拆为 M7a–M7d；见 §5；与 **FEM 主线**（真网格/求解）分列 |
 
 ### 2.3 技术债（建议纳入近期清理）
 
@@ -80,16 +80,22 @@
 | **M4** | Skill 扩展工程化 | ✅ 已完成 |
 | **M5** | FEM 会话与句柄（设计+最小实现） | ✅ M5a+M5b 已完成（样板级） |
 | **M6** | 对外集成面 | ✅ 已完成（MCP 为文档桥接，无独立 Server 二进制） |
-| **M7** | 规模能力 | 未开始 |
+| **M7** | 规模能力（平台） | ⏳ **当前冲刺**；拆 M7a→M7b→M7c→M7d |
+| **FEM 主线** | 领域 Skill（非 M7 四条表） | 与 M7b 并行；真 `mesh_import` / 求解 / 导出 |
 
 ```mermaid
 flowchart LR
-  M1[M1 协议收敛] --> M2[M2 契约测试]
-  M2 --> M3[M3 可运维]
-  M3 --> M4[M4 扩展工程化]
-  M4 --> M5[M5 FEM 句柄]
-  M5 --> M6[M6 HTTP/MCP]
-  M6 --> M7[M7 异步/子进程]
+  M1[M1 协议] --> M2[M2 契约]
+  M2 --> M3[M3 运维]
+  M3 --> M4[M4 扩展]
+  M4 --> M5[M5 句柄]
+  M5 --> M6[M6 Host]
+  M6 --> M7a[M7a 会话收尾]
+  M7a --> M7b[M7b 结果外置]
+  M7b --> M7c[M7c 异步]
+  M7c --> M7d[M7d 隔离/版本]
+  M5 --> FEM[FEM 真 Skill]
+  M7b --> FEM
 ```
 
 ---
@@ -219,19 +225,75 @@ flowchart LR
 
 ---
 
-### M7：规模能力（P3）
+### M7：规模能力（P3）— 平台层，当前建议冲刺
 
-**目标：** 长耗时仿真、多 Skill 隔离。
+**目标：** Host 能扛 **长任务、大结果、会话收尾**；隔离与多版本按需后置。  
+**说明：** 长耗时**仿真算法**属 **FEM 主线**（真 `mesh_import` / 求解 Skill），不替代 M7 平台任务；M7c 验收需至少一个「真的慢」Skill（可为 `host_slow` mock 或 FEM 求解骨架）。
+
+**依赖：** M5 句柄与 artifact、`common/io/hdf5`、M6 stdio/HTTP。  
+**与 M6 衔接：** 同步 `execute` / `POST /v1/execute` 保留短任务；异步走 M7c 新信封或 `/v1/jobs`（实现时定稿进 `skill-protocol-v1.md`）。
+
+---
+
+#### M7a：会话收尾（P1，建议先做）✅
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| `execute_async` | 返回 `job_id`；`poll` / `get_result` | 长任务不阻塞 stdin |
-| 大结果外置 | 结果写入 HDF5，响应仅 `artifact_handle` | payload 不传大数组 |
-| 子进程 Skill | 独立 EXE + stdio JSON，scheduler 转发 | 崩溃隔离 |
-| 版本并存 | `skill_id@2` 或 manifest 多版本目录 | 破坏性变更可共存 |
+| `context_close` / TTL | Store：`dropContext`/`closeContext`/`purgeExpiredContexts`；Skill `context_close`；信封 `context.close`；CLI `--drop-context` | ✅ `context_store_test`、`context_close_contract_test` |
+| 与 M5 设计对齐 | 更新 `context-and-handles-design.md` §5.4 | ✅ |
 
-**依赖：** M5 句柄与 artifact 体系。  
-**工作量：** 大。
+**工作量：** 小。
+
+---
+
+#### M7b：大结果外置（P1，建议先做）
+
+| 任务 | 交付物 | 验收 |
+|------|--------|------|
+| 结果写 artifact | 大数组/场数据经 `common/io/hdf5` 写入 `.aistudy/artifacts/` | 响应 `result` 仅含 `*_handle` 字符串，不传大块数组 |
+| 协议/manifest 约定 | `skill-protocol-v1` + 示例 Skill 的 `output_schema` | Agent 从 handle + `getArtifact` 取数 |
+| 与 M5 衔接 | `putHandle` / inbound `context.handles` | 两步流可不重复 payload 大对象 |
+
+**工作量：** 中。可与 **FEM 主线**（真网格导入）并行。
+
+---
+
+#### M7c：异步执行（P2）
+
+| 任务 | 交付物 | 验收 |
+|------|--------|------|
+| `execute_async` | 返回 `job_id`；内存 Job Store | 协议扩展（`skill-protocol-v1` § 待增） |
+| `poll` / `get_result` | CLI 或 HTTP：`GET /v1/jobs/{id}` | stdin/HTTP **不阻塞**至长任务结束 |
+| 慢 Skill 验收 | `host_slow` mock 或 FEM 求解 stub（sleep） | GTest：提交 job → poll → 取结果 |
+| 超时（可选） | `options.timeout_ms` 取消 job（与 M3 日志预留衔接） | 超时后 job 失败可查询 |
+
+**工作量：** 中–大。建议在 M7a/M7b 之后、且已有慢 Skill 再做。
+
+---
+
+#### M7d：隔离与多版本（P3–P4，可选后置）
+
+| 任务 | 交付物 | 验收 |
+|------|--------|------|
+| 子进程 Skill | 独立 EXE + stdio JSON，scheduler 转发 | 崩溃隔离；`kBindings` 仍手工，投入大 |
+| 版本并存 | `skill_id@2` 或 manifest 多版本目录 | 破坏性变更可共存；无发版需求可延后 |
+
+**工作量：** 大（子进程）；版本并存为小–中。
+
+---
+
+### FEM 主线（与 M7 并列，非 M7 子项）
+
+**目标：** 产品向「导入 → 求解 → 导出」，复用 M5 句柄与（M7b 后）artifact 外置。
+
+| 任务 | 说明 | 建议顺序 |
+|------|------|----------|
+| `file_` → `mesh_` 文档 + golden | 补 `dosc` 两步流示例与测试 | M7b 前后均可 |
+| 真 `mesh_import` | kernel 读入 + HDF5 网格 artifact | 与 M7b 并行 |
+| 求解 / 导出 Skill | 读 `mesh_` 句柄，写 `result_` 句柄 | 在 mesh 之后 |
+
+**依赖：** M5b、优先 M7b 的「大结果走 handle」约定。  
+**不纳入 M7 四条表的原因：** 避免把 M7 误解为「做求解器」；平台能力与领域算法分列。
 
 ---
 
@@ -254,11 +316,22 @@ flowchart LR
 - **M5a/M5b** 设计、Store、`context` 信封、`mesh_import` 样板、`ContextWorkflow` 测试  
 - **遗留：** `file_`→`mesh_` 文档化 golden；真实网格导入
 
-### 当前建议冲刺：M7 规模能力
+### 迭代 4：平台规模 + FEM 起步（当前建议冲刺）
 
-1. `execute_async` + `job_id` / `poll`  
-2. 大结果 artifact 外置（响应仅 handle）  
-3. （可选）子进程 Skill、版本并存  
+**平台（推荐顺序）：**
+
+1. **M7a** 会话收尾（`context_close` / TTL）  
+2. **M7b** 大结果外置（HDF5 + 响应仅 handle）  
+3. **M7c** 异步 job（需慢 Skill 验收）  
+4. **M7d** 子进程 / 多版本 — 按需  
+
+**FEM 主线（可与 M7a/M7b 并行）：**
+
+1. `file_` → `mesh_` 文档化 golden  
+2. 真 `mesh_import`（替代 M5b 样板）  
+3. 求解 / 导出 Skill 骨架  
+
+**迭代 4 验收（平台最小）：** M7a+M7b 完成；至少一个 Skill 演示「大结果仅 handle」；M7c 或 FEM 真网格二选一有可见进展即可，不必一次做完 M7 全表。
 
 ---
 
@@ -269,7 +342,7 @@ flowchart LR
 | 阶段 A | M1 + M2 | ✅ 已完成 |
 | 阶段 B | M4 | ✅ 已完成；子进程见 M7 |
 | 阶段 C | M6 | ✅ 已完成 |
-| 阶段 D | M5 + M7 | M5b ✅ 最小实现；异步/真实 FEM 见 M7 |
+| 阶段 D | M5 + M7a–M7c + FEM 主线 | M5b ✅；平台 M7 与真 FEM Skill 分列推进 |
 | 阶段 E | M2 + M3 + CI | ✅ 已完成；指标等待办 |
 
 ---
@@ -282,7 +355,8 @@ flowchart LR
 | 内置 Workflow DAG | Agent 外置多轮 `execute` 即可；内置编排投入高 |
 | 将 logger 注册为 Skill | 违反平台/领域分层 |
 | 大规模插件动态加载 | 优先静态表 + 代码生成；ABI 管理成本高 |
-| 多个 FEM 模块并行开发 | 应先完成 M5 句柄设计，再开求解/网格 |
+| 多个 FEM 模块并行开发 | M5 句柄已完成；建议 **M7a/M7b 与单一 FEM Skill（如真 mesh_import）** 交错推进，避免同时开 M7c+子进程+求解 |
+| M7 四条一次性全做 | 拆 M7a→M7d；子进程/多版本后置 |
 
 ---
 
@@ -290,9 +364,10 @@ flowchart LR
 
 1. **契约：** ✅ 对外 JSON 符合 `skill-protocol-v1.md`；rainflow + CI 契约测试。  
 2. **扩展：** ✅ `add-skill-checklist` + `host_echo`；无需改 `main.cpp`。  
-3. **仿真：** ✅ `mesh_import` 样板 + Context Store；⏳ 真实网格/求解待做。  
-4. **Agent：** ✅ stdin + `health` + HTTP `--serve` + 请求级日志；MCP 见文档桥接。  
-5. **文档：** ✅ 协议/计划/路线图 v1.5 已对齐；维护时以 `skill-protocol-v1.md` 为协议真源。
+3. **仿真：** ✅ 样板 + Store；⏳ **FEM 主线**（真网格/求解）与 **M7b** 外置结果。  
+4. **Agent：** ✅ M6 接入；⏳ M7c 长任务不阻塞 stdin/HTTP。  
+5. **文档：** ✅ 协议真源 `skill-protocol-v1.md`；M7 扩展（async/jobs）须先改协议再改代码。  
+6. **规模（M7 结案）：** M7a 会话可收尾 + M7b 大结果走 handle +（可选）M7c 异步有慢 Skill 验收。
 
 ---
 
@@ -323,6 +398,7 @@ flowchart LR
 | 1.3 | 2026-05-21 | 模块路径统一为 `src/common/status` |
 | 1.4 | 2026-05-21 | 同步 M1–M5b 完成态、CI、迭代 1–3 结案、当前冲刺 M6；§2 基线重写；路线图 v1.5 |
 | 1.5 | 2026-05-21 | M6：`host/`、`host-runtime.md`、stdio 退出码、HTTP `--serve`、`stdio_stress.ps1` |
+| 1.6 | 2026-05-21 | M7 拆为 M7a–M7d + FEM 主线分列；迭代 4 与优先级重排 |
 
 ---
 

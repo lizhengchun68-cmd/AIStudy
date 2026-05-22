@@ -94,6 +94,7 @@ StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json) {
             }
             out.context_id = ctx.context_id();
             out.inbound_handles = ctx.inbound_handles();
+            out.context_close = ctx.context_close();
         }
 
         return StatusOr<SkillEnvelope>::Ok(std::move(out));

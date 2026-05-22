@@ -36,17 +36,21 @@ struct ContextParseResult {
     bool ok() const noexcept { return success_; }
     const std::string& context_id() const { return context_id_; }
     const std::vector<ArtifactMeta>& inbound_handles() const { return inbound_handles_; }
+    /** @brief M7a: request session teardown after execute when true. */
+    bool context_close() const { return context_close_; }
     const ErrorCodeWrapper& error() const { return error_; }
     const std::string& detail() const { return detail_; }
 
     static ContextParseResult success(std::string context_id,
-                                      std::vector<ArtifactMeta> inbound);
+                                      std::vector<ArtifactMeta> inbound,
+                                      bool context_close = false);
     static ContextParseResult failure(const std::string& detail);
 
 private:
     bool success_ = false;
     std::string context_id_;
     std::vector<ArtifactMeta> inbound_handles_;
+    bool context_close_ = false;
     ErrorCodeWrapper error_;
     std::string detail_;
 

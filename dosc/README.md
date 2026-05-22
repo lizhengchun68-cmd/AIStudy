@@ -46,3 +46,8 @@ flowchart TB
 ## CI 触发（开发分支）
 
 仅 PR：`zcli/fea_dev` → `group/fea_dev`，`group/fea_dev` → `dev/fea_dev`。个人分支 push 不跑 CI。
+
+## 当前开发焦点（计划 v1.6）
+
+- **M7a–M7b**（平台）：会话收尾、大结果走 handle/HDF5  
+- **FEM 主线**：真 `mesh_import` / 求解（与 M7 并列，见 [next-development-plan.md](next-development-plan.md) § M7）

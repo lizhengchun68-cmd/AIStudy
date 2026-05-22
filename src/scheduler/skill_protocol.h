@@ -20,6 +20,8 @@ struct SkillEnvelope {
     /** @brief Empty if stateless execute. */
     std::string context_id;
     std::vector<ArtifactMeta> inbound_handles;
+    /** @brief M7a: close session after successful skill body (see context.close). */
+    bool context_close = false;
 };
 
 StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json);

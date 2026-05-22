@@ -27,6 +27,9 @@ public:
     std::string healthJson() const;
     std::string execute(const std::string& envelope_json);
 
+    /** @brief Drop in-memory session only (M7a ops); returns JSON. */
+    std::string dropContextJson(const std::string& context_id);
+
     /** @brief Map protocol v1 execute response JSON to process exit code. */
     static HostExitCode exitCodeFromExecuteResponse(const std::string& response_json);
 

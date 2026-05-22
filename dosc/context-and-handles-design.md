@@ -118,7 +118,7 @@ struct ArtifactMeta {
 ### 5.1 职责
 
 - 进程内单例（或 `Dispatcher` 成员）：`context_id → (handle_id → ArtifactMeta)`；
-- 生命周期：默认 **进程存活期**；M7 可加 TTL / 显式 `context_close` Skill；
+- 生命周期（**M7a** ✅）：默认进程存活；`context_close` Skill、`context.close` 信封字段、`dropContext` / `closeContext`、空闲 TTL（`setDefaultContextTtlSeconds`，`execute` 入口 `purgeExpiredContexts`）；
 - 线程安全：M5b 先 `std::mutex` 保护 map。
 
 ### 5.2 接口（`skill_context_store.h`，M5b 实现）
@@ -129,7 +129,11 @@ struct ArtifactMeta {
 | `getArtifact(context_id, handle_id)` | 查询；失败返回 `VALIDATION` / `UNKNOWN` |
 | `putArtifact(context_id, meta)` | 注册或覆盖句柄 |
 | `listHandles(context_id)` | 调试 / `--describe` 扩展 |
-| `mergeInboundHandles(context_id, handles_json)` | 将信封 `context.handles` 合并入 Store |
+| `mergeInbound(context_id, inbound)` | 将信封 `context.handles` 合并入 Store |
+| `dropContext(context_id)` | 仅删内存会话；返回是否曾存在 |
+| `closeContext(context_id)` | 删会话 + 删除 `.aistudy/artifacts/<id>/` |
+| `hasContext(context_id)` | 会话是否在 Store |
+| `purgeExpiredContexts()` | 按 TTL 清理空闲会话（TTL=0 关闭） |
 
 ### 5.3 Dispatcher 集成（M5b）
 
@@ -142,6 +146,17 @@ parseSkillEnvelope
 ```
 
 M5a **不**修改 `SkillExecuteFunc` 签名；M5b 通过 `thread_local` 或 `execute` 栈上 `ContextView` 传入 adapter（设计预留，见 M5b 实现说明）。
+
+### 5.4 会话收尾（M7a）
+
+| 方式 | 说明 |
+|------|------|
+| Skill `context_close` | 信封带 `context`；`payload` 为空对象；`result.closed=true` |
+| `context.close: true` | 与任意 Skill 同请求；**执行结束后**自动 `closeContext` |
+| CLI `--drop-context <id>` | 仅 `dropContext`（不删 artifact 目录），运维/调试 |
+| TTL | `ContextStore::setDefaultContextTtlSeconds(n)`；每次 `execute` 前 `purgeExpiredContexts` |
+
+多步 FEM 流推荐：最后一步带 `context.close: true` 或单独调用 `context_close`。
 
 ---
 

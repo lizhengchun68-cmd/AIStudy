@@ -17,7 +17,7 @@
 3. 分阶段路线图与 `common` 层定位；
 4. 与三层架构规则（内核 / 适配 / 调度、句柄、禁止跨模块函数指针）的对齐方式。
 
-**实施状态快照（2026-05-21）：** M1–M6 已落地；下一步为 **M7**（异步 job / 子进程 Skill）。
+**实施状态快照（2026-05-21）：** M1–M6 已落地；当前冲刺 **M7a–M7d**（平台）与 **FEM 主线** 并列，见 [`next-development-plan.md`](next-development-plan.md) § M7。
 
 ---
 
@@ -155,9 +155,11 @@ M5b 已实现：`context_id` + `mesh_`/`result_`/`file_` 前缀句柄、`artifac
 
 目标：stdio 退出码、`host-runtime.md`、HTTP `--serve`；MCP 见 `mcp-tool-alignment.md`。
 
-### 阶段 D：编排、会话、句柄 — ✅ 最小实现（M5b）
+### 阶段 D：编排、会话、句柄 + 规模 — 进行中
 
-Context Store、`mesh_import` 样板、两步 `context_id` 测试。未做：异步 job、真实 `file_`→`mesh_` 业务链文档、HDF5 网格持久化。
+- **M5b ✅**：Context Store、`mesh_import` 样板、两步 `context_id` 测试。  
+- **M7a–M7c ⏳**：会话 TTL/close、大结果 handle 外置、异步 job（见 [`next-development-plan.md`](next-development-plan.md) § M7）。  
+- **FEM 主线 ⏳**：真网格/求解/导出（与 M7 平台任务分列）。
 
 ### 阶段 E：工程化与运维 — ✅ 主体完成
 
@@ -195,7 +197,11 @@ Context Store、`mesh_import` 样板、两步 `context_id` 测试。未做：异
 | 1–4 | 协议、manifest、校验、日志、CI | ✅ |
 | 5 | context + 句柄（最小） | ✅ M5b |
 | 6 | M6 stdio/HTTP | ✅ |
-| 7 | M7 异步/子进程 | 下一步 |
+| 7a | M7a 会话收尾 | 下一步 |
+| 7b | M7b 结果外置 | 下一步 |
+| 7c | M7c 异步 job | 待定 |
+| 7d | M7d 子进程/版本 | 可选 |
+| — | FEM 真 Skill | 与 M7b 并行 |
 | 7 | M7 异步 / 子进程 Skill | 待定 |
 
 ---

@@ -1,8 +1,11 @@
 #include "host/skill_host.h"
+#include "scheduler/skill_context_store.h"
 #include "scheduler/skill_registry.h"
 #include <Poco/JSON/Object.h>
+#include <Poco/JSON/Stringifier.h>
 #include <Poco/JSON/Parser.h>
 #include <iostream>
+#include <sstream>
 
 namespace AIstudy {
 namespace host {
@@ -33,6 +36,20 @@ std::string SkillHost::healthJson() const {
 
 std::string SkillHost::execute(const std::string& envelope_json) {
     return dispatcher_.execute(envelope_json);
+}
+
+std::string SkillHost::dropContextJson(const std::string& context_id) {
+    Poco::JSON::Object::Ptr root(new Poco::JSON::Object);
+    const auto dropped = scheduler::ContextStore::instance().dropContext(context_id);
+    root->set("protocol", "1");
+    root->set("ok", dropped.ok());
+    if (dropped.ok()) {
+        root->set("dropped", dropped.value());
+        root->set("context_id", context_id);
+    }
+    std::ostringstream oss;
+    Poco::JSON::Stringifier::condense(root, oss);
+    return oss.str();
 }
 
 HostExitCode SkillHost::exitCodeFromExecuteResponse(const std::string& response_json) {

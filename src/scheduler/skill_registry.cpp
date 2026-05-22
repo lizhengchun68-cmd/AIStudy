@@ -2,6 +2,7 @@
 #include "adapter/host_echo_adapter.h"
 #include "adapter/mesh_import_adapter.h"
 #include "adapter/rainflow_adapter.h"
+#include "scheduler/context_close_handler.h"
 #include "common/logger/logger.h"
 #include "scheduler/skill_manifest.h"
 #include <Poco/File.h>
@@ -20,6 +21,7 @@ const SkillBinding kBindings[] = {
     {"rainflow", adapter::rainflow::rainflow_execute},
     {"host_echo", adapter::host_echo::host_echo_execute},
     {"mesh_import", adapter::mesh_import::mesh_import_execute},
+    {"context_close", context_close_execute},
 };
 
 std::string manifestPathForSkill(const std::string& root, const std::string& skill_id) {

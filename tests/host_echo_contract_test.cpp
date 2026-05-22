@@ -43,6 +43,6 @@ TEST(SkillRegistry, ListIncludesAtLeastTwoSkills) {
 
     auto root = aistudy_test::parseJsonObject(dispatcher.listSkillsJson());
     auto skills = root->getArray("skills");
-    ASSERT_GE(skills->size(), 3u);
+    ASSERT_GE(skills->size(), 4u);
     EXPECT_TRUE(dispatcher.loadFailures().empty());
 }

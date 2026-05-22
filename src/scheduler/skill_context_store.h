@@ -3,9 +3,9 @@
 
 /**
  * @file skill_context_store.h
- * @brief Context Store interface (M5b implementation).
+ * @brief Context Store interface (M5b + M7a lifecycle).
  *
- * M5a: interface only — see dosc/context-and-handles-design.md §5.
+ * See dosc/context-and-handles-design.md §5.
  */
 
 #include "common/status/status_or.h"
@@ -32,8 +32,26 @@ public:
     StatusOr<bool> mergeInbound(const std::string& context_id,
                                 const std::vector<ArtifactMeta>& inbound);
 
-    /** @brief For tests: remove one session and its in-memory handles. */
+    /**
+     * @brief Remove in-memory session only (M7a: Host/tests).
+     * @return true if a session existed before drop.
+     */
     StatusOr<bool> dropContext(const std::string& context_id);
+
+    /**
+     * @brief End session: drop handles and remove artifact directory (M7a).
+     * @return true if a session existed in store before close.
+     */
+    StatusOr<bool> closeContext(const std::string& context_id);
+
+    bool hasContext(const std::string& context_id) const;
+
+    /** @brief Remove sessions idle longer than configured TTL (0 = disabled). */
+    int purgeExpiredContexts();
+
+    /** @brief Default idle TTL in seconds; 0 disables expiry (M7a). */
+    static void setDefaultContextTtlSeconds(int seconds);
+    static int defaultContextTtlSeconds();
 
     static ContextStore& instance();
 };
