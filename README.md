@@ -73,6 +73,8 @@ ctest --test-dir build -C Release --output-on-failure
 
 **GitHub Actions：** push/PR 到 `main` / `master` / `zcli/fea_dev` 时自动跑上述流程（见 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)）。需将 `thirdparty/` 预编译依赖一并提交到仓库（Poco / GTest / HDF5）。
 
+查看运行状态：仓库 **Actions** → 选中 Run → 各步骤有中文标题；展开日志中的 `::group::` 块可看 Configure/Build/ctest 详情；失败时下载 **ctest-logs** 构件，或在 Run 页底部看 **Job summary**。
+
 ---
 
 ## 目录结构（摘要）

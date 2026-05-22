@@ -12,10 +12,15 @@ on:
       - main
       - master
       - zcli/fea_dev
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
 
 jobs:
   windows-msvc:
@@ -27,11 +32,145 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure CMake
-        run: cmake -S . -B build -DAISTUDY_BUILD_TESTS=ON
+      - name: 运行信息 / Run metadata
+        run: |
+          $now = Get-Date -Format 'yyyy-MM-dd HH:mm:ss K'
+          Write-Host "========================================"
+          Write-Host "CI 开始  $now"
+          Write-Host "Workflow : ${{ github.workflow }}"
+          Write-Host "Run ID   : ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
+          Write-Host "Ref      : ${{ github.ref }}"
+          Write-Host "SHA      : ${{ github.sha }}"
+          Write-Host "Actor    : ${{ github.actor }}"
+          Write-Host "Runner   : $env:RUNNER_OS $env:RUNNER_ARCH"
+          Write-Host "========================================"
+          Write-Host "CMake version:"
+          cmake --version
+          Write-Host "MSBuild (if on PATH):"
+          Get-Command msbuild -ErrorAction SilentlyContinue | Format-List
 
-      - name: Build Release
-        run: cmake --build build --config Release --parallel
+      - name: 检查 thirdparty 预编译依赖
+        run: |
+          $required = @(
+            'thirdparty/poco/include/Poco/JSON/Object.h',
+            'thirdparty/poco/lib/Release/PocoFoundation.lib',
+            'thirdparty/poco/bin/Release/PocoFoundation.dll',
+            'thirdparty/gtest/lib/Release/gtest.lib',
+            'thirdparty/gtest/lib/cmake/GTest/GTestConfig.cmake',
+            'thirdparty/hdf5/include/H5Cpp.h',
+            'thirdparty/hdf5/lib/Release/hdf5.lib',
+            'thirdparty/hdf5/bin/Release/hdf5.dll',
+            'skills/rainflow/manifest.json'
+          )
+          $missing = @()
+          foreach ($path in $required) {
+            if (Test-Path $path) {
+              Write-Host "[OK]   $path"
+            } else {
+              Write-Host "[FAIL] $path"
+              $missing += $path
+            }
+          }
+          if ($missing.Count -gt 0) {
+            Write-Error "缺少 $($missing.Count) 个文件。请确认 thirdparty/ 与 skills/ 已提交到 Git。"
+          }
+          Write-Host "依赖检查通过（$($required.Count) 项）。"
 
-      - name: Run tests
-        run: ctest --test-dir build -C Release --output-on-failure
+      - name: CMake 配置 (Configure)
+        run: |
+          Write-Host "::group::cmake configure"
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          cmake -S . -B build `
+            -DAISTUDY_BUILD_TESTS=ON `
+            --log-level=VERBOSE
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sw.Stop()
+          Write-Host "::endgroup::"
+          Write-Host "Configure 完成，耗时 $($sw.Elapsed.TotalSeconds.ToString('F1'))s"
+
+      - name: 编译 Release (Build)
+        run: |
+          Write-Host "::group::cmake build Release"
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          cmake --build build --config Release --parallel 4 --verbose
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sw.Stop()
+          Write-Host "::endgroup::"
+          Write-Host "Build 完成，耗时 $($sw.Elapsed.TotalSeconds.ToString('F1'))s"
+          Write-Host "产物:"
+          @(
+            'build/src/Release/AIstudy.exe',
+            'build/tests/Release/aistudy_tests.exe'
+          ) | ForEach-Object {
+            if (Test-Path $_) {
+              $item = Get-Item $_
+              Write-Host "  [OK] $($item.FullName) ($([math]::Round($item.Length/1KB)) KB)"
+            } else {
+              Write-Host "  [??] $_ (未找到)"
+            }
+          }
+
+      - name: 枚举测试用例 (ctest -N)
+        run: |
+          Write-Host "即将执行的测试:"
+          ctest --test-dir build -C Release -N | ForEach-Object { Write-Host $_ }
+          $count = (ctest --test-dir build -C Release -N 2>&1 | Select-String 'Total Tests:').Line
+          Write-Host $count
+
+      - name: 运行测试 (ctest)
+        id: test
+        run: |
+          Write-Host "::group::ctest Release"
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          ctest --test-dir build -C Release `
+            --output-on-failure `
+            --verbose `
+            --progress `
+            --timeout 300
+          $exit = $LASTEXITCODE
+          $sw.Stop()
+          Write-Host "::endgroup::"
+          Write-Host "ctest 结束，exit=$exit，耗时 $($sw.Elapsed.TotalSeconds.ToString('F1'))s"
+          if ($exit -ne 0) {
+            $lastLog = 'build/Testing/Temporary/LastTest.log'
+            if (Test-Path $lastLog) {
+              Write-Host "::group::LastTest.log (tail)"
+              Get-Content $lastLog -Tail 80 | ForEach-Object { Write-Host $_ }
+              Write-Host "::endgroup::"
+            }
+          }
+          exit $exit
+
+      - name: 上传失败日志 (仅测试失败时)
+        if: failure() && steps.test.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-logs-${{ github.run_id }}
+          path: |
+            build/Testing/Temporary/LastTest.log
+            build/Testing/Temporary/LastTestsFailed.log
+          if-no-files-found: ignore
+
+      - name: 作业摘要 (Job summary)
+        if: always()
+        run: |
+          $status = '${{ job.status }}'
+          $icon = if ($status -eq 'success') { '✅' } elseif ($status -eq 'failure') { '❌' } else { '⚠️' }
+          @"
+          ## $icon CI $status
+
+          | 项 | 值 |
+          |----|-----|
+          | Run | [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+          | 分支 | ``${{ github.ref_name }}`` |
+          | 提交 | ``${{ github.sha }}`` |
+          | 触发 | ${{ github.event_name }} |
+
+          **本地复现**
+
+          ```powershell
+          cmake -S . -B build -DAISTUDY_BUILD_TESTS=ON
+          cmake --build build --config Release
+          ctest --test-dir build -C Release --output-on-failure --verbose
+          ```
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
