@@ -1,15 +1,15 @@
 # AIStudy 下一步开发计划
 
-> 文档版本：1.3  
+> 文档版本：1.4  
 > 日期：2026-05-21  
-> 依据：`dosc/agent-skill-architecture-roadmap.md`、`dosc/skill-protocol-v1.md`、当前仓库代码快照  
+> 依据：`dosc/agent-skill-architecture-roadmap.md`（v1.5）、`dosc/skill-protocol-v1.md`、当前仓库实现（M1–M5b、CI）  
 > 性质：**规划文档**，不包含实现任务的具体 PR/分支安排  
 
 ---
 
 ## 1. 文档目的
 
-在阶段 A/B（Skill 契约 + 静态注册）已基本落地的前提下，明确：
+在阶段 A/B/C（契约、注册、会话句柄最小实现）已落地的前提下，明确：
 
 1. **当前真实能力边界**（与路线图、协议文档的差异）；
 2. **近期必须补齐的缺口**（协议与实现一致、可测试、可观测）；
@@ -27,29 +27,30 @@
 | 能力 | 实现 |
 |------|------|
 | 三层架构 | `kernel` / `adapter` / `scheduler` + `common/*` |
-| 唯一示例 Skill | `rainflow`（`kernel` + `adapter` + `skills/rainflow/manifest.json`） |
-| 协议 v1 文档 | `dosc/skill-protocol-v1.md`（规范态，无遗留格式） |
-| 调度入口 | `Dispatcher::execute`、`registerSkill`、`skill_registry` 静态表 |
-| 信封解析 | `skill_protocol`（必填 `protocol: "1"`、`skill_id`、`payload`） |
+| 内置 Skill | `rainflow`、`host_echo`、`mesh_import`（后者为 M5 会话/句柄**样板**，非真实导入） |
+| 协议 v1 | `dosc/skill-protocol-v1.md` 与 `skill_protocol` 一致（含 `context` §2.4） |
+| 调度入口 | `Dispatcher::execute`、`skill_registry` + `skill_registry_bindings.txt` / CMake 校验 |
+| 信封解析 | `protocol: "1"`、`skill_id`、`payload`；可选 `context`、`options.timeout_ms` |
 | 调度前校验 | `skill_payload_validator`（aistudy-schema-v1 子集 + 字段路径 `error.message`） |
+| Context / 句柄 | `ContextStore`、`context_handle_rules`、`skill_execution_context`（见设计文档） |
 | 统一错误模型 | `StatusOr` + `api_response`（v1 `ok`/`error`/`meta`） |
-| 发现能力 | CLI：`AIstudy --list`、`--describe <skill_id>`、stdin `execute` |
-| 横切库 | `common/status`、`common/io`（json/hdf5）、`common/logger` 已接入构建 |
+| 发现与探活 | `--list`、`--describe`、`--health`；stdin `execute` |
+| 可观测性 | `AIstudy.Dispatcher` 请求级日志；manifest 失败 → `load_errors` + stderr |
+| 质量门禁 | GTest 契约（rainflow / host_echo / mesh_import / context 等）；**GitHub Actions** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
+| 文档入口 | 根目录 [`README.md`](../README.md) + `dosc/host-runbook.md` |
 
-### 2.2 与规范/文档仍不一致或未完成
+### 2.2 仍待办（代码或文档）
 
-| 项 | 规范/目标 | 代码现状 | 风险 |
-|----|-----------|----------|------|
-| 仅 protocol v1 | `skill-protocol-v1.md` 要求 `protocol: "1"` 必填 | `parseSkillEnvelope` 强制 `protocol == "1"`；响应仅 `ok`/`meta` | ✅ 已收敛 |
-| 信封字段 | 仅 `skill_id` | 已移除 `task_type`；解析层仅认 `skill_id` | 路线图 v1.4 已同步 |
-| JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | **aistudy-schema-v1** 子集：`required`/`type`/`enum`/`minimum`/`maximum`/`properties`/`items`/`additionalProperties`/`minItems`/`maxItems`；失败时 `error.message` 含字段路径 | `oneOf`/`anyOf`/`pattern`/`default` 应用等仍待扩展；`default`/`description` 仅文档 |
-| 契约测试 | 每 Skill `tests/*.json` + GTest | rainflow：`request_ok`、enum/未知字段/空数组负例 + `skill_registry_test`（manifest 缺失/非法） | 其它 Skill 待补 golden；无远程 CI 时以本地 `ctest` 为门禁 |
-| 结构化日志 | `request_id` + `skill_id` + `duration_ms` | `AIstudy.Dispatcher` 入口/出口日志；可 grep `request_id` | ✅ M3 |
-| `health` | 路线图 §4.4 | CLI `--health` JSON（`skills_loaded`、`checks`） | ✅ M3 |
-| `context` / `options` | 协议预留 | `options` M3；`context` M5b Store + `mesh_import` | ✅ 见 `context-and-handles-design.md` |
-| 注册失败策略 | manifest 缺失应可见 | 失败记入 `load_errors` + 日志/stderr | ✅ 已实现 |
-| Skill 扩展 | 自动发现 / 代码生成 | `kBindings` + `skill_registry_bindings.txt`；CMake 校验与 `skills/` 一致；样板 `host_echo` | 全量 codegen 仍待 M4+ |
-| FEM 领域 Skill | 网格/求解/结果 | 仅 rainflow 练习模块 | 产品主线未启动 |
+| 项 | 说明 |
+|----|------|
+| JSON Schema 高级子集 | `oneOf`/`anyOf`/`pattern` 等；`default` 未在运行时应用 |
+| 全 Skill golden | `host_echo` / `mesh_import` 有契约测试；非 rainflow 的负例 golden 可继续补 |
+| FEM 真实能力 | `mesh_import` 为 stub；求解/导出 Skill、HDF5 真实网格 I/O 未做 |
+| `file_` → `mesh_` 文档化两步流 | M5 迭代 3 叙事：`mesh_import` + 同 `context_id` 已测；独立 `file_` 注册链待补 |
+| 会话生命周期 | 无 TTL / `context_close`；Store 跟进程存活（M7） |
+| `kBindings` 代码生成 | CMake 校验已有；C++ 表仍手工维护 |
+| M6 对外集成 | stdio 退出码固化、HTTP/MCP、`host-runtime.md` |
+| M7 规模能力 | 异步 job、子进程 Skill、大结果仅返回 handle |
 
 ### 2.3 技术债（建议纳入近期清理）
 
@@ -73,13 +74,13 @@
 
 | 里程碑 | 名称 | 目标 | 建议优先级 |
 |--------|------|------|------------|
-| **M1** | 协议与实现收敛 | 代码仅支持 protocol v1；删除遗留响应路径 | P0 |
-| **M2** | 契约与质量门禁 | Schema 校验加强 + golden 测试 + 注册可见错误 | P0 |
-| **M3** | Skill Host 可运维 | 结构化日志、`health`、manifest 扫描策略 | P1 |
-| **M4** | Skill 扩展工程化 | 注册表生成/扫描、`skills/` 约定固化 | P1 |
-| **M5** | FEM 会话与句柄（设计+最小实现） | `context` 解析 + Context Store + 首个「有状态」Skill 设计 | P1（仿真主线） |
-| **M6** | 对外集成面 | stdio 稳定化 → 可选 HTTP/MCP；独立 Host EXE | P2 |
-| **M7** | 规模能力 | 异步 job、artifact 外置、子进程 Skill | P3 |
+| **M1** | 协议与实现收敛 | ✅ 已完成 |
+| **M2** | 契约与质量门禁 | ✅ 已完成 |
+| **M3** | Skill Host 可运维 | ✅ 已完成 |
+| **M4** | Skill 扩展工程化 | ✅ 已完成 |
+| **M5** | FEM 会话与句柄（设计+最小实现） | ✅ M5a+M5b 已完成（样板级） |
+| **M6** | 对外集成面 | ⏳ **当前建议冲刺** |
+| **M7** | 规模能力 | 未开始 |
 
 ```mermaid
 flowchart LR
@@ -198,11 +199,11 @@ flowchart LR
 | 首个 FEM Skill | `mesh_import` manifest + adapter + kernel stub | ✅ `MeshImportContract`；`--list` ≥3 |
 | artifact 目录 | `.aistudy/artifacts/<context_id>/` | ✅ `ensureArtifactContextDir` |
 
-**迭代 3 验收（M5 整体）：** 文档化两步流（注册 `file_` → 产出 `mesh_`）无需在 payload 重复传大对象。
+**M5 遗留（非阻塞 M6）：** 文档化 `file_` → `mesh_` 业务两步流；`mesh_import` 接真实 HDF5/网格内核。
 
 ---
 
-### M6：对外集成面（P2）
+### M6：对外集成面（P2）— 当前建议冲刺
 
 **目标：** Agent Runtime 与计算内核解耦部署。
 
@@ -234,30 +235,30 @@ flowchart LR
 
 ---
 
-## 6. 推荐实施顺序（接下来 3 个迭代）
+## 6. 推荐实施顺序（三个迭代 + 当前焦点）
 
-### 迭代 1（当前冲刺）：可信 Host
+### 迭代 1：可信 Host — ✅ 已完成
 
-1. **M2** rainflow golden 测试 + manifest 加载失败告警  
-2. **M3** 结构化日志 + `--health`（M1 协议/API/common_status 路径已收敛）  
+- **M2** rainflow golden + manifest 加载失败可观测  
+- **M3** 结构化日志 + `--health`  
+- **验收：** `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe` 可完成成功/失败调用；[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) 在 `main` / `master` / `zcli/fea_dev` 上跑 `ctest -C Release`
 
-**迭代 1 验收：** 外部 Agent 仅读 `skill-protocol-v1.md` + `skills/rainflow/manifest.json` + `AIstudy.exe`，即可完成成功/失败调用；CI 跑通 rainflow 契约测试（✅ `.github/workflows/ci.yml`：Windows + `ctest -C Release` 全量契约）。
+### 迭代 2：可运维 + 扩展套路 — ✅ 已完成
 
-### 迭代 2：可运维 + 扩展套路
+- **M4** `add-skill-checklist.md`、CMake 注册校验、`host_echo`  
+- **M2** schema 子集 + 字段路径 `error.message`  
+- **验收：** `request_id` 可 grep；新 Skill 可按清单接入（无需改 `main.cpp`）
 
-1. **M3** 结构化日志 + `--health`  
-2. **M4** 《新增 Skill 检查清单》+ 注册一致性校验（CMake 或脚本）  
-3. **M2** 扩展 schema 校验（enum/类型）  
+### 迭代 3：仿真主线启动 — ✅ 主体完成
 
-**迭代 2 验收：** 一次错误调用可通过 `request_id` 在日志定位；新 Skill 可按文档在 1 天内接入（含测试目录）。
+- **M5a/M5b** 设计、Store、`context` 信封、`mesh_import` 样板、`ContextWorkflow` 测试  
+- **遗留：** `file_`→`mesh_` 文档化 golden；真实网格导入
 
-### 迭代 3：仿真主线启动
+### 当前建议冲刺：M6 对外集成面
 
-1. **M5a** ✅ 设计文档 + 句柄规则 GTest（本迭代先完成）  
-2. **M5b** Context Store + 信封 `context` + Dispatcher + `mesh_import` 骨架  
-3. 本地 `ctest` 扩展 `context_store_test`、FEM 契约目录  
-
-**迭代 3 验收：** 文档化的两步工作流（如「导入 → 查询句柄」）无需在 payload 重复传大对象（M5b 结束时满足）。
+1. `dosc/host-runtime.md` 或 README 明确 Host 边界  
+2. stdio 一行 in/out、退出码约定、稳定性脚本  
+3. （可选）HTTP `POST /v1/execute`、MCP Server  
 
 ---
 
@@ -265,11 +266,11 @@ flowchart LR
 
 | 路线图阶段 | 本计划映射 | 说明 |
 |------------|------------|------|
-| 阶段 A | M1 + M2 | A 已基本完成；重点是**收敛遗留响应**与**测试** |
-| 阶段 B | M1 + M4 | 静态表已有；补生成/校验与子进程方案（M7） |
-| 阶段 C | M6 | Host 分离与传输 |
-| 阶段 D | M5 + M7 | 句柄、异步、artifact |
-| 阶段 E | M2 + M3 | 契约测试、日志、指标（指标可放在 M3 之后） |
+| 阶段 A | M1 + M2 | ✅ 已完成 |
+| 阶段 B | M4 | ✅ 已完成；子进程见 M7 |
+| 阶段 C | M6 | ⏳ 当前焦点 |
+| 阶段 D | M5 + M7 | M5b ✅ 最小实现；异步/真实 FEM 见 M7 |
+| 阶段 E | M2 + M3 + CI | ✅ 已完成；指标等待办 |
 
 ---
 
@@ -287,11 +288,11 @@ flowchart LR
 
 ## 9. 成功标准（3 个月视角）
 
-1. **契约：** 所有对外 JSON 符合 `skill-protocol-v1.md`；rainflow 有自动化契约测试。  
-2. **扩展：** 新增第 2 个 Skill 有文档化清单且无需改 `main.cpp`。  
-3. **仿真：** 存在 1 个 FEM 向 Skill 原型 + Context/句柄设计落地（至少内存 Store）。  
-4. **Agent：** Cursor/脚本通过 stdin（或 MCP）稳定调用 Host，具备 `health` 与请求级日志。  
-5. **文档：** 路线图、协议、本计划三者一致，无 `task_type`/`success` 等过时描述。
+1. **契约：** ✅ 对外 JSON 符合 `skill-protocol-v1.md`；rainflow + CI 契约测试。  
+2. **扩展：** ✅ `add-skill-checklist` + `host_echo`；无需改 `main.cpp`。  
+3. **仿真：** ✅ `mesh_import` 样板 + Context Store；⏳ 真实网格/求解待做。  
+4. **Agent：** ✅ stdin + `health` + 请求级日志；⏳ MCP/HTTP（M6）。  
+5. **文档：** ✅ 协议/计划/路线图 v1.5 已对齐；维护时以 `skill-protocol-v1.md` 为协议真源。
 
 ---
 
@@ -299,8 +300,13 @@ flowchart LR
 
 | 文档 | 路径 |
 |------|------|
-| 架构演进路线图 | `dosc/agent-skill-architecture-roadmap.md` |
-| 调度协议 v1（规范） | `dosc/skill-protocol-v1.md` |
+| 项目入口 | [`README.md`](../README.md) |
+| 架构演进路线图 | [`dosc/agent-skill-architecture-roadmap.md`](agent-skill-architecture-roadmap.md)（v1.5） |
+| 调度协议 v1（**协议真源**） | [`dosc/skill-protocol-v1.md`](skill-protocol-v1.md) |
+| Context / 句柄 | [`dosc/context-and-handles-design.md`](context-and-handles-design.md) |
+| Host 运行与 CI | [`dosc/host-runbook.md`](host-runbook.md) |
+| 新增 Skill | [`dosc/add-skill-checklist.md`](add-skill-checklist.md) |
+| MCP 对齐 | [`dosc/mcp-tool-alignment.md`](mcp-tool-alignment.md) |
 | 架构强制规则 | `.cursor/rules/fem-simulation-architecture.mdc` |
 | rainflow 契约 | `skills/rainflow/manifest.json` |
 
@@ -314,6 +320,7 @@ flowchart LR
 | 1.1 | 2026-05-21 | 路线图 v1.4 同步；M1 协议/API 收敛 |
 | 1.2 | 2026-05-21 | `rainflow.schema.json` 移除；manifest 为唯一 schema |
 | 1.3 | 2026-05-21 | 模块路径统一为 `src/common/status` |
+| 1.4 | 2026-05-21 | 同步 M1–M5b 完成态、CI、迭代 1–3 结案、当前冲刺 M6；§2 基线重写；路线图 v1.5 |
 
 ---
 

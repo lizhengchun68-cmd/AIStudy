@@ -47,11 +47,11 @@ Agent 生成 payload 前应阅读 `input_schema`（通过 `--describe` 或仓库
 
 见 [host-runbook.md](host-runbook.md)。工作目录或 `AISTUDY_PROJECT_ROOT` 须指向含 `skills/` 的仓库根。
 
-## 6. 预留字段（尚未实现行为）
+## 6. 信封扩展字段
 
 | 信封字段 | 状态 |
 |----------|------|
-| `context` | M5b：`context_id` + 可选 `handles`；无状态 Skill 可省略 |
-| `options.timeout_ms` | 已解析并写日志，**未**强制超时 |
+| `context` | ✅ M5b：`context_id` + 可选 `handles`；`mesh_import` 等需会话的 Skill 必填 |
+| `options.timeout_ms` | 已解析并写日志，**未**强制超时（M6+） |
 
-配置 MCP 时勿依赖上述字段的语义，直至对应里程碑完成。
+详见 [`skill-protocol-v1.md`](skill-protocol-v1.md) §2.4 与 [`context-and-handles-design.md`](context-and-handles-design.md)。

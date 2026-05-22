@@ -94,9 +94,12 @@ tests/                            # GTest（契约与调度行为）
 
 ## 文档索引
 
+完整列表见 [`dosc/README.md`](dosc/README.md)。
+
 | 文档 | 说明 |
 |------|------|
-| [`dosc/skill-protocol-v1.md`](dosc/skill-protocol-v1.md) | 信封与响应格式（`protocol: "1"`、`ok`/`error`/`meta`） |
+| [`dosc/skill-protocol-v1.md`](dosc/skill-protocol-v1.md) | 信封与响应格式（**协议真源**） |
+| [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | 里程碑 M1–M7、迭代状态（当前：**M6**） |
 | [`dosc/host-runbook.md`](dosc/host-runbook.md) | 工作目录、日志 grep `request_id`、常见问题 |
 | [`dosc/context-and-handles-design.md`](dosc/context-and-handles-design.md) | `context_id`、句柄、`artifact://` |
 | [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | M1–M7 里程碑与迭代计划 |

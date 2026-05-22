@@ -1,6 +1,6 @@
 # AIstudy Skill Host 运行手册
 
-> 对应里程碑 M3：本地运行、探活、日志与 manifest 路径说明。
+> 对应 M3（可运维）+ CI：本地运行、探活、日志与 manifest 路径。里程碑状态见 [next-development-plan.md](next-development-plan.md)。
 
 ## 1. 可执行文件与工作目录
 

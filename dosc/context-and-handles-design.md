@@ -1,8 +1,8 @@
 # Context 与会话句柄设计（M5a）
 
-> 版本：1.0  
+> 版本：1.1  
 > 日期：2026-05-21  
-> 状态：**设计基线**（M5a）；实现见 M5b 任务表  
+> 状态：**M5a + M5b 已实现**（设计基线 + 内存 Store + `mesh_import` 样板）；真实网格 I/O 与 `file_`→`mesh_` 业务链待后续 Skill  
 > 约束：符合 `.cursor/rules/fem-simulation-architecture.mdc`（对外仅字符串句柄 ID，禁止指针/函数指针出进程）
 
 ---
@@ -21,8 +21,8 @@ FEM 多步工作流（导入网格 → 求解 → 导出）中，大对象不宜
 
 | 阶段 | 内容 | 验收 |
 |------|------|------|
-| **M5a**（本文 + 约定代码） | 设计文档、句柄 ID 规范、`ArtifactMeta` 类型、句柄校验函数、协议 JSON 形状、Store **接口声明** | 设计评审；GTest 校验规则；**无**运行时 Store |
-| **M5b** | 解析信封 `context`、`ContextStore` 内存实现、Dispatcher 注入、首个 FEM 向 Skill 骨架 | 同一 `context_id` 两次调用可注册/查询句柄 |
+| **M5a**（本文 + 约定代码） | 设计文档、句柄 ID 规范、`ArtifactMeta`、句柄校验、`parseContextObjectDetailed` | ✅ 已实现 |
+| **M5b** | 解析信封 `context`、`ContextStore`、Dispatcher、`mesh_import` 样板 | ✅ 已实现；`ContextWorkflow.TwoStepShareContextId` |
 
 ---
 
