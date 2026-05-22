@@ -1,18 +1,79 @@
 #include "scheduler/Dispatcher.h"
 
+#include "common/logger/logger.h"
 #include "common/status/api_response.h"
 #include "common/status/exception/error_category.h"
 #include "common/status/exception/error_codes.h"
 #include "scheduler/skill_payload_validator.h"
 #include "scheduler/skill_protocol.h"
+#include "scheduler/skill_registry.h"
+#include <Poco/Format.h>
 #include <Poco/JSON/Array.h>
 #include <Poco/JSON/Object.h>
+#include <Poco/JSON/Parser.h>
 #include <Poco/JSON/Stringifier.h>
 #include <chrono>
 #include <sstream>
 
 namespace AIstudy {
 namespace scheduler {
+namespace {
+
+void logExecuteBegin(const std::string& request_id, const std::string& skill_id, int timeout_ms) {
+    auto log = common::logger::Logger::get("AIstudy.Dispatcher");
+    log.info(Poco::format("execute begin request_id=%s skill_id=%s", request_id, skill_id));
+    if (timeout_ms > 0) {
+        log.info(Poco::format(
+            "options.timeout_ms=%d (reserved: not enforced; logged only)", timeout_ms));
+    }
+}
+
+void logExecuteEnd(const std::string& request_id,
+                   const std::string& skill_id,
+                   int duration_ms,
+                   bool ok,
+                   int error_code,
+                   const std::string& error_category) {
+    common::logger::Logger::get("AIstudy.Dispatcher").info(Poco::format(
+        "execute end request_id=%s skill_id=%s duration_ms=%d ok=%s error_code=%d category=%s",
+        request_id,
+        skill_id,
+        duration_ms,
+        ok ? std::string("true") : std::string("false"),
+        error_code,
+        error_category));
+}
+
+int parseResponseSummary(const std::string& response_json, bool* ok_out, int* error_code_out,
+                         std::string* error_category_out) {
+    *ok_out = false;
+    *error_code_out = 0;
+    if (error_category_out) {
+        error_category_out->clear();
+    }
+    try {
+        Poco::JSON::Parser parser;
+        Poco::JSON::Object::Ptr root =
+            parser.parse(response_json).extract<Poco::JSON::Object::Ptr>();
+        if (!root || !root->has("ok")) {
+            return 0;
+        }
+        *ok_out = root->getValue<bool>("ok");
+        if (!*ok_out && root->has("error") && root->isObject("error")) {
+            Poco::JSON::Object::Ptr err = root->getObject("error");
+            if (err->has("code")) {
+                *error_code_out = err->getValue<int>("code");
+            }
+            if (error_category_out && err->has("category")) {
+                *error_category_out = err->getValue<std::string>("category");
+            }
+        }
+    } catch (...) {
+    }
+    return 0;
+}
+
+} // namespace
 
 void Dispatcher::recordLoadFailure(SkillLoadFailure failure) {
     load_failures_.push_back(std::move(failure));
@@ -34,19 +95,38 @@ const Dispatcher::SkillEntry* Dispatcher::findSkill(const std::string& skill_id)
 }
 
 std::string Dispatcher::execute(const std::string& envelope_json) {
+    const auto wall_start = std::chrono::steady_clock::now();
+
     const auto envelopeRes = parseSkillEnvelope(envelope_json);
     if (!envelopeRes.ok()) {
-        return makeSkillApiFailureResponse(envelopeRes.status(), "", ApiResponseMeta{});
+        const std::string response =
+            makeSkillApiFailureResponse(envelopeRes.status(), "", ApiResponseMeta{});
+        const int duration_ms = static_cast<int>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - wall_start)
+                .count());
+        logExecuteEnd("", "", duration_ms, false, envelopeRes.status().code(),
+                      envelopeRes.status().category());
+        return response;
     }
 
     const SkillEnvelope& envelope = envelopeRes.value();
+    logExecuteBegin(envelope.request_id, envelope.skill_id, envelope.timeout_ms);
+
     const SkillEntry* entry = findSkill(envelope.skill_id);
     if (!entry) {
         const ErrorCodeWrapper err(static_cast<int>(SystemError::UNKNOWN_ERROR),
                                    ErrorCategory::SYSTEM);
-        return makeSkillApiFailureResponse(
+        const std::string response = makeSkillApiFailureResponse(
             err, envelope.request_id, ApiResponseMeta{},
             "Unknown skill_id: " + envelope.skill_id);
+        const int duration_ms = static_cast<int>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - wall_start)
+                .count());
+        logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, false, err.code(),
+                      err.category());
+        return response;
     }
 
     ApiResponseMeta meta;
@@ -57,14 +137,28 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
         && envelope.skill_version != entry->manifest.version) {
         const ErrorCodeWrapper err(static_cast<int>(ValidationError::INVALID_INPUT),
                                    ErrorCategory::VALIDATION);
-        return makeSkillApiFailureResponse(
+        const std::string response = makeSkillApiFailureResponse(
             err, envelope.request_id, meta, "skill_version mismatch");
+        const int duration_ms = static_cast<int>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - wall_start)
+                .count());
+        logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, false, err.code(),
+                      err.category());
+        return response;
     }
 
     const auto validRes = validatePayloadAgainstManifest(envelope.payload, entry->manifest);
     if (!validRes.ok()) {
-        return makeSkillApiFailureResponse(
+        const std::string response = makeSkillApiFailureResponse(
             validRes.error(), envelope.request_id, meta, validRes.detail());
+        const int duration_ms = static_cast<int>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - wall_start)
+                .count());
+        logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, false,
+                      validRes.error().code(), validRes.error().category());
+        return response;
     }
 
     std::ostringstream payload_oss;
@@ -77,7 +171,48 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
     meta.duration_ms = static_cast<int>(
         std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
 
-    return makeSkillApiResponse(skill_result, envelope.request_id, meta);
+    const std::string response =
+        makeSkillApiResponse(skill_result, envelope.request_id, meta);
+
+    bool ok = false;
+    int error_code = 0;
+    std::string error_category;
+    parseResponseSummary(response, &ok, &error_code, &error_category);
+    if (!skill_result.ok() && error_code == 0) {
+        error_code = skill_result.status().code();
+        error_category = skill_result.status().category();
+    }
+
+    const int duration_ms = static_cast<int>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - wall_start)
+            .count());
+    logExecuteEnd(envelope.request_id, envelope.skill_id, duration_ms, ok, error_code,
+                  error_category);
+    return response;
+}
+
+std::string Dispatcher::healthJson() const {
+    Poco::JSON::Object::Ptr root(new Poco::JSON::Object);
+    root->set("protocol", "1");
+    const bool skills_ok = !registry_.empty();
+    root->set("ok", skills_ok);
+    root->set("project_root", projectRootPath());
+    root->set("skills_loaded", static_cast<int>(registry_.size()));
+    root->set("skills_load_failed", static_cast<int>(load_failures_.size()));
+
+    Poco::JSON::Object::Ptr checks(new Poco::JSON::Object);
+    checks->set("poco", true);
+#ifdef AISTUDY_HDF5_ENABLED
+    checks->set("hdf5", true);
+#else
+    checks->set("hdf5", false);
+#endif
+    root->set("checks", checks);
+
+    std::ostringstream oss;
+    Poco::JSON::Stringifier::condense(root, oss);
+    return oss.str();
 }
 
 std::string Dispatcher::listSkillsJson() const {

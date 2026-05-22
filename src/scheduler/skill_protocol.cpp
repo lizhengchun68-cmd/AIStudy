@@ -64,6 +64,13 @@ StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json) {
                                   ErrorCategory::VALIDATION));
         }
 
+        if (envelope->has("options") && envelope->isObject("options")) {
+            Poco::JSON::Object::Ptr options = envelope->getObject("options");
+            if (options && options->has("timeout_ms")) {
+                out.timeout_ms = options->getValue<int>("timeout_ms");
+            }
+        }
+
         return StatusOr<SkillEnvelope>::Ok(std::move(out));
     } catch (const Poco::Exception&) {
         return StatusOr<SkillEnvelope>::Fail(

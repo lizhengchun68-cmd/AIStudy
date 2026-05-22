@@ -14,6 +14,8 @@ struct SkillEnvelope {
     std::string skill_id;
     std::string skill_version;
     Poco::JSON::Object::Ptr payload;
+    /** @brief From options.timeout_ms; 0 means unset. Cancellation not implemented (M3 logs only). */
+    int timeout_ms = 0;
 };
 
 StatusOr<SkillEnvelope> parseSkillEnvelope(const std::string& envelope_json);

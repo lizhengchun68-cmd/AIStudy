@@ -41,6 +41,9 @@ public:
     /** @brief 返回 manifest 描述 JSON */
     std::string describeSkillJson(const std::string& skill_id) const;
 
+    /** @brief Host 探活 JSON（protocol 1，含 skills_loaded / checks） */
+    std::string healthJson() const;
+
     void recordLoadFailure(SkillLoadFailure failure);
     const std::vector<SkillLoadFailure>& loadFailures() const { return load_failures_; }
 

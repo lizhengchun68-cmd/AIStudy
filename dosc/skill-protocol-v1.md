@@ -123,8 +123,9 @@
 
 | 命令 | 输出 |
 |------|------|
-| `AIstudy --list` | `{ "skills": [ { "id", "version", "title", "description", "deprecated" }, ... ] }` |
+| `AIstudy --list` | `{ "skills": [ ... ], "load_errors": [ ... ] }`（可选） |
 | `AIstudy --describe <skill_id>` | 完整 manifest 摘要（含 `input_schema`、`output_schema`、`tags` 等） |
+| `AIstudy --health` | `{ "protocol":"1", "ok", "skills_loaded", "checks": { "poco", "hdf5" }, ... }` |
 
 Agent 编排前应优先 `--describe` 获取契约，再构�?`payload`�?
 

@@ -35,3 +35,7 @@ endif()
 if(TARGET PocoFoundation::PocoFoundation)
     target_link_libraries(scheduler PUBLIC PocoFoundation::PocoFoundation)
 endif()
+
+if(TARGET common_io_hdf5)
+    target_compile_definitions(scheduler PRIVATE AISTUDY_HDF5_ENABLED)
+endif()

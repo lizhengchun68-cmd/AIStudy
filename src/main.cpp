@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 
+#include "common/logger/logger.h"
 #include "scheduler/Dispatcher.h"
 #include "scheduler/skill_registry.h"
 
@@ -11,6 +12,7 @@ void printHelp() {
     std::cout << "Usage: AIstudy [options]\n"
               << "  --list                List registered skills (JSON)\n"
               << "  --describe <skill_id> Show skill manifest / schema\n"
+              << "  --health              Host health probe (JSON)\n"
               << "  (no arguments)        Read one JSON envelope from stdin and execute\n";
 }
 
@@ -24,6 +26,8 @@ std::string readStdinAll() {
 
 int main(int argc, char* argv[]) {
     using namespace AIstudy;
+
+    common::logger::Logger::initialize();
 
     scheduler::Dispatcher dispatcher;
     scheduler::registerBuiltinSkills(dispatcher);
@@ -42,6 +46,10 @@ int main(int argc, char* argv[]) {
         }
         if ((arg1 == "--describe" || arg1 == "-describe") && argc >= 3) {
             std::cout << dispatcher.describeSkillJson(argv[2]) << std::endl;
+            return 0;
+        }
+        if (arg1 == "--health" || arg1 == "-health") {
+            std::cout << dispatcher.healthJson() << std::endl;
             return 0;
         }
         if (arg1 == "--help" || arg1 == "-h") {

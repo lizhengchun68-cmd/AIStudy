@@ -44,8 +44,8 @@
 | 信封字段 | 仅 `skill_id` | 已移除 `task_type`；解析层仅认 `skill_id` | 路线图 v1.4 已同步 |
 | JSON Schema 校验 | 成熟平台「执行前 schema 校验」 | **aistudy-schema-v1** 子集：`required`/`type`/`enum`/`minimum`/`maximum`/`properties`/`items`/`additionalProperties`/`minItems`/`maxItems`；失败时 `error.message` 含字段路径 | `oneOf`/`anyOf`/`pattern`/`default` 应用等仍待扩展；`default`/`description` 仅文档 |
 | 契约测试 | 每 Skill `tests/*.json` + GTest | rainflow：`request_ok`、enum/未知字段/空数组负例 + `skill_registry_test`（manifest 缺失/非法） | 其它 Skill 待补 golden；无远程 CI 时以本地 `ctest` 为门禁 |
-| 结构化日志 | `request_id` + `skill_id` + `duration_ms` | scheduler **未** 调用 `common/logger` | 难排查生产问题 |
-| `health` | 路线图 §4.4 | 未实现 | 部署/探活缺失 |
+| 结构化日志 | `request_id` + `skill_id` + `duration_ms` | `AIstudy.Dispatcher` 入口/出口日志；可 grep `request_id` | ✅ M3 |
+| `health` | 路线图 §4.4 | CLI `--health` JSON（`skills_loaded`、`checks`） | ✅ M3 |
 | `context` / `options` | 协议预留 | **未解析** | FEM 多步前需设计 |
 | 注册失败策略 | manifest 缺失应可见 | 失败记入 `load_errors` + 日志/stderr | ✅ 已实现 |
 | Skill 扩展 | 自动发现 / 代码生成 | 手工维护 `kBindings[]` | Skill 增多后易漏注册 |
@@ -134,10 +134,10 @@ flowchart LR
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| 请求级日志 | `Dispatcher::execute` 入口/出口：`common/logger` 记录 `request_id`、`skill_id`、`duration_ms`、`ok`、错误码 | 日志行可 grep `request_id` 串联一次调用 |
-| `health` 能力 | CLI：`AIstudy --health` 或 JSON capability；检查 Poco/HDF5/已注册 Skill 数 | 返回 `{ "ok": true, "skills_loaded": N, ... }` |
-| 超时预留 | 解析信封 `options.timeout_ms`（可先记录日志，再实现取消） | 文档与代码对 `options` 行为一致 |
-| stdin 使用说明 | `dosc/` 下补充「Host 运行手册」：工作目录、`AISTUDY_PROJECT_ROOT`、manifest 路径 | 从非仓库根目录启动仍能加载 `skills/` 或明确失败原因 |
+| 请求级日志 | `Dispatcher::execute` 入口/出口：`common/logger` 记录 `request_id`、`skill_id`、`duration_ms`、`ok`、错误码 | ✅ `AIstudy.Dispatcher`；`dosc/host-runbook.md` §4 |
+| `health` 能力 | CLI：`AIstudy --health` 或 JSON capability；检查 Poco/HDF5/已注册 Skill 数 | ✅ `healthJson()` + GTest `SkillHostHealth` |
+| 超时预留 | 解析信封 `options.timeout_ms`（可先记录日志，再实现取消） | ✅ `skill_protocol` 解析 + 日志注明 not enforced |
+| stdin 使用说明 | `dosc/` 下补充「Host 运行手册」：工作目录、`AISTUDY_PROJECT_ROOT`、manifest 路径 | ✅ `dosc/host-runbook.md` |
 
 **依赖：** M1。  
 **工作量：** 中。

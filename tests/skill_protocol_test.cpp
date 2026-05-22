@@ -25,3 +25,15 @@ TEST(SkillProtocol, ParsesProtocolV1Envelope) {
     EXPECT_FALSE(result.value().request_id.empty());
     EXPECT_TRUE(result.value().payload != nullptr);
 }
+
+TEST(SkillProtocol, ParsesOptionsTimeoutMs) {
+    const std::string json = R"({
+        "protocol": "1",
+        "skill_id": "rainflow",
+        "options": { "timeout_ms": 5000 },
+        "payload": { "load_history": [1], "method": "ThreePoint" }
+    })";
+    const auto result = parseSkillEnvelope(json);
+    ASSERT_TRUE(result.ok());
+    EXPECT_EQ(result.value().timeout_ms, 5000);
+}
