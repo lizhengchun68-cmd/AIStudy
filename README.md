@@ -96,7 +96,13 @@ src/kernel/                       # 算法与领域实现
 src/adapter/                      # JSON ↔ kernel，无指针对外
 src/scheduler/                    # Dispatcher、协议解析、注册表、Context Store
 dosc/                             # 协议、路线图、开发计划、运行手册
-tests/                            # GTest（契约与调度行为）
+tests/                            # GTest（按模块分子目录，见 tests/CMakeLists.txt）
+tests/common/                     # 契约测试共享工具
+tests/scheduler/                  # 调度层：协议、注册表、Context
+tests/contracts/                  # Skill 契约（rainflow、mesh_import、host_echo 等）
+tests/kernel/                     # 内核算法（雨流三点/四点/修正四点等）
+tests/host/                       # Host 进程与退出码
+tests/fixtures/                   # 测试用 JSON 等静态资源
 ```
 
 新增 Skill 流程：[`dosc/add-skill-checklist.md`](dosc/add-skill-checklist.md)。

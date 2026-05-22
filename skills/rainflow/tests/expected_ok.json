@@ -2,8 +2,14 @@
   "protocol": "1",
   "ok": true,
   "result": {
-    "items": [],
-    "num_cycles": 0
+    "items": [
+      {
+        "amplitude": 1.0,
+        "mean": 2.0,
+        "count": 1
+      }
+    ],
+    "num_cycles": 1
   },
   "meta": {
     "skill_id": "rainflow",

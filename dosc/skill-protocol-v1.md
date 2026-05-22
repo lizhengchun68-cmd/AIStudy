@@ -98,7 +98,7 @@
 - 需要会话的 Skill（如 `mesh_import`）若未带 `context`，返回 `context: no active context (envelope context required)`。
 - **收尾（M7a）：** Skill `context_close`（`payload: {}`）或 `context.close: true`；Host 亦支持 `AIstudy --drop-context <id>`（仅内存，不删 artifact）。
 
-**多步示例（同一 `context_id`）：** 先 `mesh_import` 注册 `mesh_*`，下一步可在 `context.handles` 中传入该句柄，无需在 `payload` 重复传大对象；结束时 `context_close` 或 `close: true`。详见设计文档 §5.4 与 `tests/context_close_contract_test.cpp`。
+**多步示例（同一 `context_id`）：** 先 `mesh_import` 注册 `mesh_*`，下一步可在 `context.handles` 中传入该句柄，无需在 `payload` 重复传大对象；结束时 `context_close` 或 `close: true`。详见设计文档 §5.4 与 `tests/scheduler/context_close_contract_test.cpp`。
 
 ---
 

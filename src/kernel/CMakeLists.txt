@@ -9,6 +9,8 @@ add_library(kernel STATIC
     rainflow/internal/rainflow_four_point.cpp   
     rainflow/internal/rainflow_modified_four_point.h
     rainflow/internal/rainflow_modified_four_point.cpp
+    rainflow/internal/rainflow_counting_core.h
+    rainflow/internal/rainflow_counting_core.cpp
 )
 
 target_include_directories(kernel

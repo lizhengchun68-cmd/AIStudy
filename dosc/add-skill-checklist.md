@@ -43,7 +43,7 @@
 - [ ] `skills/<skill_id>/tests/request_ok.json`
 - [ ] `skills/<skill_id>/tests/expected_ok.json`
 - [ ] 可选负例：`request_invalid_*.json`
-- [ ] `tests/<skill>_contract_test.cpp` 或扩展现有 GTest
+- [ ] `tests/contracts/<skill>_contract_test.cpp` 或扩展现有 GTest（并在 `tests/CMakeLists.txt` 登记）
 - [ ] `cd build && ctest -C Release` 全绿
 
 ## 6. 文档
