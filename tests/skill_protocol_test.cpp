@@ -1,6 +1,6 @@
-#include "scheduler/skill_protocol.h"
-
 #include <gtest/gtest.h>
+
+#include "scheduler/skill_protocol.h"
 
 using AIstudy::scheduler::parseSkillEnvelope;
 

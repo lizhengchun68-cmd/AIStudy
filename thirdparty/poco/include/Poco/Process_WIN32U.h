@@ -68,8 +68,7 @@ public:
 		Pipe* inPipe,
 		Pipe* outPipe,
 		Pipe* errPipe,
-		const EnvImpl& env,
-		int options = 0);
+		const EnvImpl& env);
 	static void killImpl(ProcessHandleImpl& handle);
 	static void killImpl(PIDImpl pid);
 	static bool isRunningImpl(const ProcessHandleImpl& handle);

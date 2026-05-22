@@ -39,8 +39,8 @@ protected:
 	void resetImpl();
 
 private:
-	std::atomic<bool> _auto;
-	std::atomic<bool> _state;
+	bool            _auto;
+	bool            _state;
 	pthread_mutex_t _mutex;
 	pthread_cond_t  _cond;
 };

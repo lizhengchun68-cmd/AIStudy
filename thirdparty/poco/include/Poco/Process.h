@@ -98,7 +98,7 @@ public:
 		/// Returns the number of seconds spent by the
 		/// current process in user and kernel mode.
 
-	static ProcessHandle launch(const std::string& command, const Args& args, int options = 0);
+	static ProcessHandle launch(const std::string& command, const Args& args);
 		/// Creates a new process for the given command and returns
 		/// a ProcessHandle of the new process. The given arguments are
 		/// passed to the command on the command line.
@@ -106,8 +106,7 @@ public:
 	static ProcessHandle launch(
 		const std::string& command,
 		const Args& args,
-		const std::string& initialDirectory,
-		int options = 0);
+		const std::string& initialDirectory);
 		/// Creates a new process for the given command and returns
 		/// a ProcessHandle of the new process. The given arguments are
 		/// passed to the command on the command line.
@@ -118,8 +117,7 @@ public:
 		const Args& args,
 		Pipe* inPipe,
 		Pipe* outPipe,
-		Pipe* errPipe,
-		int options = 0);
+		Pipe* errPipe);
 		/// Creates a new process for the given command and returns
 		/// a ProcessHandle of the new process. The given arguments are
 		/// passed to the command on the command line.
@@ -152,8 +150,7 @@ public:
 		const std::string& initialDirectory,
 		Pipe* inPipe,
 		Pipe* outPipe,
-		Pipe* errPipe,
-		int options = 0);
+		Pipe* errPipe);
 		/// Creates a new process for the given command and returns
 		/// a ProcessHandle of the new process. The given arguments are
 		/// passed to the command on the command line.
@@ -187,8 +184,7 @@ public:
 		Pipe* inPipe,
 		Pipe* outPipe,
 		Pipe* errPipe,
-		const Env& env,
-		int options = 0);
+		const Env& env);
 		/// Creates a new process for the given command and returns
 		/// a ProcessHandle of the new process. The given arguments are
 		/// passed to the command on the command line.
@@ -206,8 +202,7 @@ public:
 		Pipe* inPipe,
 		Pipe* outPipe,
 		Pipe* errPipe,
-		const Env& env,
-		int options = 0);
+		const Env& env);
 		/// Creates a new process for the given command and returns
 		/// a ProcessHandle of the new process. The given arguments are
 		/// passed to the command on the command line.

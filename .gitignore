@@ -1,8 +1,7 @@
 # CMake / MSVC 构建产物
 build/
-thirdparty/gtest/build/
-thirdparty/gtest/build-release/
-thirdparty/gtest/build-debug/
+thirdparty/poco/build-prebuilt/
+thirdparty/poco/_install/
 cmake-build-*/
 out/
 

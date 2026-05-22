@@ -20,6 +20,7 @@ target_link_libraries(common_logger
     PUBLIC
         common_status
         PocoFoundation::PocoFoundation
+        PocoUtil::PocoUtil
     PRIVATE
         common_io_json
 )
