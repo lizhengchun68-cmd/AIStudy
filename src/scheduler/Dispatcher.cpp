@@ -63,7 +63,8 @@ std::string Dispatcher::execute(const std::string& envelope_json) {
 
     const auto validRes = validatePayloadAgainstManifest(envelope.payload, entry->manifest);
     if (!validRes.ok()) {
-        return makeSkillApiFailureResponse(validRes.status(), envelope.request_id, meta);
+        return makeSkillApiFailureResponse(
+            validRes.error(), envelope.request_id, meta, validRes.detail());
     }
 
     std::ostringstream payload_oss;

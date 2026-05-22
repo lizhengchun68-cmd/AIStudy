@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "common/status/exception/error_codes.h"
 #include "scheduler/Dispatcher.h"
 #include "scheduler/skill_registry.h"
 #include "skill_contract_util.h"
@@ -59,8 +60,13 @@ TEST(RainflowContract, InvalidMethodFailsAtScheduler) {
     aistudy_test::stripVolatileResponseFields(expectedObj);
 
     ASSERT_FALSE(actualObj->getValue<bool>("ok"));
-    EXPECT_EQ(actualObj->getObject("error")->getValue<std::string>("category"),
-              expectedObj->getObject("error")->getValue<std::string>("category"));
+    auto actualErr = actualObj->getObject("error");
+    auto expectedErr = expectedObj->getObject("error");
+    EXPECT_EQ(actualErr->getValue<std::string>("category"),
+              expectedErr->getValue<std::string>("category"));
+    EXPECT_EQ(actualErr->getValue<int>("code"),
+              static_cast<int>(AIstudy::ValidationError::CONSTRAINT_VIOLATION));
+    EXPECT_EQ(actualErr->getValue<std::string>("message"), "method: value not in enum");
     EXPECT_EQ(actualObj->getValue<std::string>("protocol"), "1");
 }
 

@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include "common/status/exception/error_codes.h"
 #include "scheduler/skill_manifest.h"
 #include "scheduler/skill_payload_validator.h"
 
 #include <Poco/JSON/Parser.h>
 
+using AIstudy::ValidationError;
 using AIstudy::scheduler::loadSkillManifest;
 using AIstudy::scheduler::validatePayloadAgainstManifest;
 
@@ -22,5 +24,7 @@ TEST(SkillPayloadValidator, RejectsInvalidMethodEnum) {
 
     const auto valid = validatePayloadAgainstManifest(payload, manifestRes.value());
     EXPECT_FALSE(valid.ok());
-    EXPECT_EQ(valid.status().category(), "validation");
+    EXPECT_EQ(valid.error().category(), "validation");
+    EXPECT_EQ(valid.error().code(), static_cast<int>(ValidationError::CONSTRAINT_VIOLATION));
+    EXPECT_EQ(valid.detail(), "method: value not in enum");
 }
