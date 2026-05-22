@@ -15,6 +15,7 @@
 | `AIstudy --list` | 已注册 Skill 列表（JSON），含 `load_errors` |
 | `AIstudy --describe <skill_id>` | 输出 manifest / schema（如 `rainflow`、`host_echo`） |
 | `AIstudy --health` | 探活 JSON：`skills_loaded`、`checks.poco`、`checks.hdf5` |
+| `AIstudy --serve [port]` | 本地 HTTP（默认 8765），见 [host-runtime.md](host-runtime.md) |
 | `AIstudy`（无参数） | 从 **stdin** 读入一条协议 v1 信封 JSON，向 **stdout** 输出一条响应 JSON |
 
 帮助：`AIstudy --help`

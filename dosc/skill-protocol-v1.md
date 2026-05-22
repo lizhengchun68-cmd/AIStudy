@@ -1,7 +1,7 @@
 # Skill 调度协议 v1
 
 > 适用宿主：`AIstudy`（`Dispatcher` + `skills/<skill_id>/manifest.json`）  
-> 传输：进程 stdin 一行 JSON / 未来可扩展 HTTP、MCP
+> 传输：进程 stdin 一行 JSON；可选本地 HTTP（`AIstudy --serve`，见 [`host-runtime.md`](host-runtime.md)）；MCP 见 [`mcp-tool-alignment.md`](mcp-tool-alignment.md)
 
 本文档定义 Agent 与 Skill Host 之间的**唯一**调度契约，不包含其它信封格式。
 

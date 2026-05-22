@@ -8,6 +8,7 @@ add_executable(aistudy_tests
     context_handle_rules_test.cpp
     context_store_test.cpp
     dispatcher_context_error_test.cpp
+    host_exit_code_test.cpp
     mesh_import_contract_test.cpp
 )
 
@@ -28,6 +29,7 @@ target_link_libraries(aistudy_tests
     PRIVATE
 
         scheduler
+        host
 
         GTest::gtest_main
 

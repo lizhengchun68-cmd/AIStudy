@@ -47,7 +47,10 @@ cmake --build build --config Release
 | `AIstudy --list` | 已注册 Skill（JSON），含 `load_errors` |
 | `AIstudy --describe <skill_id>` | manifest / input_schema / output_schema |
 | `AIstudy --health` | 探活：`skills_loaded`、`checks.poco`、`checks.hdf5` |
-| `AIstudy`（无参数） | stdin 一行 JSON 信封 → stdout 一行 JSON 响应 |
+| `AIstudy --serve [port]` | 本地 HTTP API（默认 `8765`，仅 `127.0.0.1`） |
+| `AIstudy`（无参数） | stdin 一行 JSON 信封 → stdout 一行 JSON；退出码见下 |
+
+**stdio 退出码：** `0` 成功 / `1` 用法错误 / `2` 业务 `ok:false` / `3` Host 异常。详见 [`dosc/host-runtime.md`](dosc/host-runtime.md)。
 
 **rainflow 示例（PowerShell）：**
 
@@ -107,7 +110,8 @@ tests/                            # GTest（契约与调度行为）
 | 文档 | 说明 |
 |------|------|
 | [`dosc/skill-protocol-v1.md`](dosc/skill-protocol-v1.md) | 信封与响应格式（**协议真源**） |
-| [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | 里程碑 M1–M7、迭代状态（当前：**M6**） |
+| [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | 里程碑 M1–M7、迭代状态（当前：**M7**） |
+| [`dosc/host-runtime.md`](dosc/host-runtime.md) | Host 边界、stdio/HTTP、退出码（M6） |
 | [`dosc/host-runbook.md`](dosc/host-runbook.md) | 工作目录、日志 grep `request_id`、常见问题 |
 | [`dosc/context-and-handles-design.md`](dosc/context-and-handles-design.md) | `context_id`、句柄、`artifact://` |
 | [`dosc/next-development-plan.md`](dosc/next-development-plan.md) | M1–M7 里程碑与迭代计划 |

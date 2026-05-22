@@ -17,7 +17,7 @@
 3. 分阶段路线图与 `common` 层定位；
 4. 与三层架构规则（内核 / 适配 / 调度、句柄、禁止跨模块函数指针）的对齐方式。
 
-**实施状态快照（2026-05-21）：** M1–M5b 已落地；迭代 1–3（见 [`next-development-plan.md`](next-development-plan.md) §6）主体完成；下一步为 **M6**（stdio 固化 / HTTP / MCP）。
+**实施状态快照（2026-05-21）：** M1–M6 已落地；下一步为 **M7**（异步 job / 子进程 Skill）。
 
 ---
 
@@ -73,7 +73,7 @@ main.cpp
 | 维度 | 当前 | 目标 |
 |------|------|------|
 | 注册 | `kBindings` 手工 + CMake 校验 | 代码生成 / 子进程 Skill（M7） |
-| 传输 | stdin 单行 JSON | stdio 固化 + HTTP/MCP（M6） |
+| 传输 | stdin + 本地 HTTP `--serve` | MCP 文档桥接（stdio 子进程） |
 | 超时 | `options.timeout_ms` 仅日志 | 调度层强制取消 |
 | FEM 领域 | `mesh_import` stub | 真实导入/求解/导出 Skill |
 | 会话生命周期 | 进程内存 Store | TTL、`context_close`（M7） |
@@ -151,9 +151,9 @@ M5b 已实现：`context_id` + `mesh_`/`result_`/`file_` 前缀句柄、`artifac
 
 `skill_registry`、`registerBuiltinSkills`、CMake 与 `bindings.txt` 校验、`host_echo` 第二样板。未做：子进程 / 动态插件。
 
-### 阶段 C：Agent Runtime 与 Host 分离 — ⏳ 未开始（M6）
+### 阶段 C：Agent Runtime 与 Host 分离 — ✅ 已完成（M6）
 
-目标：stdio 行为固化、可选 HTTP/MCP；身份说明见 README / 计划中的 `host-runtime.md`。
+目标：stdio 退出码、`host-runtime.md`、HTTP `--serve`；MCP 见 `mcp-tool-alignment.md`。
 
 ### 阶段 D：编排、会话、句柄 — ✅ 最小实现（M5b）
 
@@ -194,7 +194,8 @@ Context Store、`mesh_import` 样板、两步 `context_id` 测试。未做：异
 |------|------|------|
 | 1–4 | 协议、manifest、校验、日志、CI | ✅ |
 | 5 | context + 句柄（最小） | ✅ M5b |
-| 6 | M6 stdio/HTTP/MCP | 下一步 |
+| 6 | M6 stdio/HTTP | ✅ |
+| 7 | M7 异步/子进程 | 下一步 |
 | 7 | M7 异步 / 子进程 Skill | 待定 |
 
 ---

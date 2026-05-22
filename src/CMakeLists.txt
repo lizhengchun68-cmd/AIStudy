@@ -2,6 +2,7 @@ add_subdirectory(common)
 add_subdirectory(kernel)
 add_subdirectory(adapter)
 add_subdirectory(scheduler)
+add_subdirectory(host)
 
 # 主程序
 add_executable(AIstudy main.cpp)
@@ -15,7 +16,7 @@ target_compile_definitions(AIstudy
 
 target_link_libraries(AIstudy
     PRIVATE
-        scheduler
+        host
 )
 
 aistudy_copy_poco_runtime_dlls(AIstudy)

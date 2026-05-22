@@ -7,6 +7,7 @@
 | 文档 | 用途 |
 |------|------|
 | [skill-protocol-v1.md](skill-protocol-v1.md) | 调度信封与响应（**协议真源**，含 `context`） |
+| [host-runtime.md](host-runtime.md) | Host 身份、stdio/HTTP、退出码（M6） |
 | [host-runbook.md](host-runbook.md) | 构建、stdin、日志、CI、排错 |
 | [../skills/rainflow/manifest.json](../skills/rainflow/manifest.json) | rainflow 契约样例 |
 

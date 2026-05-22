@@ -1,6 +1,6 @@
 # AIStudy 下一步开发计划
 
-> 文档版本：1.4  
+> 文档版本：1.5  
 > 日期：2026-05-21  
 > 依据：`dosc/agent-skill-architecture-roadmap.md`（v1.5）、`dosc/skill-protocol-v1.md`、当前仓库实现（M1–M5b、CI）  
 > 性质：**规划文档**，不包含实现任务的具体 PR/分支安排  
@@ -49,7 +49,7 @@
 | `file_` → `mesh_` 文档化两步流 | M5 迭代 3 叙事：`mesh_import` + 同 `context_id` 已测；独立 `file_` 注册链待补 |
 | 会话生命周期 | 无 TTL / `context_close`；Store 跟进程存活（M7） |
 | `kBindings` 代码生成 | CMake 校验已有；C++ 表仍手工维护 |
-| M6 对外集成 | stdio 退出码固化、HTTP/MCP、`host-runtime.md` |
+| M6 对外集成 | ✅ stdio 退出码、`host-runtime.md`、HTTP `--serve`；MCP 文档对齐 |
 | M7 规模能力 | 异步 job、子进程 Skill、大结果仅返回 handle |
 
 ### 2.3 技术债（建议纳入近期清理）
@@ -79,7 +79,7 @@
 | **M3** | Skill Host 可运维 | ✅ 已完成 |
 | **M4** | Skill 扩展工程化 | ✅ 已完成 |
 | **M5** | FEM 会话与句柄（设计+最小实现） | ✅ M5a+M5b 已完成（样板级） |
-| **M6** | 对外集成面 | ⏳ **当前建议冲刺** |
+| **M6** | 对外集成面 | ✅ 已完成（MCP 为文档桥接，无独立 Server 二进制） |
 | **M7** | 规模能力 | 未开始 |
 
 ```mermaid
@@ -203,16 +203,16 @@ flowchart LR
 
 ---
 
-### M6：对外集成面（P2）— 当前建议冲刺
+### M6：对外集成面（P2）— ✅ 已完成
 
 **目标：** Agent Runtime 与计算内核解耦部署。
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| Skill Host 身份明确 | `AIstudy` 定位为 Host：仅 list/describe/execute/health | README 或 `dosc/host-runtime.md` |
-| stdio 协议固化 | 一行 JSON in、一行 JSON out；约定退出码 | 脚本 100 次调用无挂起 |
-| HTTP JSON API（可选） | 本地 `POST /v1/execute` | curl 可调用 rainflow |
-| MCP Server（可选） | 暴露 list/describe/execute 为 MCP tools | Cursor 可配置 MCP 调用 rainflow |
+| Skill Host 身份明确 | [`dosc/host-runtime.md`](host-runtime.md) + `src/host/skill_host.*` | ✅ |
+| stdio 协议固化 | 退出码 0/1/2/3；[`scripts/stdio_stress.ps1`](../scripts/stdio_stress.ps1) | ✅ GTest `HostExitCode.*` |
+| HTTP JSON API | `AIstudy --serve [port]`：`GET /v1/health`、`/v1/skills`、`POST /v1/execute` | ✅ 本地 curl |
+| MCP Server | [`mcp-tool-alignment.md`](mcp-tool-alignment.md) + stdio 子进程方式 | ✅ 文档；无独立 MCP 二进制 |
 
 **依赖：** M1–M3。  
 **工作量：** 中–大。
@@ -254,11 +254,11 @@ flowchart LR
 - **M5a/M5b** 设计、Store、`context` 信封、`mesh_import` 样板、`ContextWorkflow` 测试  
 - **遗留：** `file_`→`mesh_` 文档化 golden；真实网格导入
 
-### 当前建议冲刺：M6 对外集成面
+### 当前建议冲刺：M7 规模能力
 
-1. `dosc/host-runtime.md` 或 README 明确 Host 边界  
-2. stdio 一行 in/out、退出码约定、稳定性脚本  
-3. （可选）HTTP `POST /v1/execute`、MCP Server  
+1. `execute_async` + `job_id` / `poll`  
+2. 大结果 artifact 外置（响应仅 handle）  
+3. （可选）子进程 Skill、版本并存  
 
 ---
 
@@ -268,7 +268,7 @@ flowchart LR
 |------------|------------|------|
 | 阶段 A | M1 + M2 | ✅ 已完成 |
 | 阶段 B | M4 | ✅ 已完成；子进程见 M7 |
-| 阶段 C | M6 | ⏳ 当前焦点 |
+| 阶段 C | M6 | ✅ 已完成 |
 | 阶段 D | M5 + M7 | M5b ✅ 最小实现；异步/真实 FEM 见 M7 |
 | 阶段 E | M2 + M3 + CI | ✅ 已完成；指标等待办 |
 
@@ -291,7 +291,7 @@ flowchart LR
 1. **契约：** ✅ 对外 JSON 符合 `skill-protocol-v1.md`；rainflow + CI 契约测试。  
 2. **扩展：** ✅ `add-skill-checklist` + `host_echo`；无需改 `main.cpp`。  
 3. **仿真：** ✅ `mesh_import` 样板 + Context Store；⏳ 真实网格/求解待做。  
-4. **Agent：** ✅ stdin + `health` + 请求级日志；⏳ MCP/HTTP（M6）。  
+4. **Agent：** ✅ stdin + `health` + HTTP `--serve` + 请求级日志；MCP 见文档桥接。  
 5. **文档：** ✅ 协议/计划/路线图 v1.5 已对齐；维护时以 `skill-protocol-v1.md` 为协议真源。
 
 ---
@@ -305,6 +305,7 @@ flowchart LR
 | 调度协议 v1（**协议真源**） | [`dosc/skill-protocol-v1.md`](skill-protocol-v1.md) |
 | Context / 句柄 | [`dosc/context-and-handles-design.md`](context-and-handles-design.md) |
 | Host 运行与 CI | [`dosc/host-runbook.md`](host-runbook.md) |
+| Host 运行时（M6） | [`dosc/host-runtime.md`](host-runtime.md) |
 | 新增 Skill | [`dosc/add-skill-checklist.md`](add-skill-checklist.md) |
 | MCP 对齐 | [`dosc/mcp-tool-alignment.md`](mcp-tool-alignment.md) |
 | 架构强制规则 | `.cursor/rules/fem-simulation-architecture.mdc` |
@@ -321,6 +322,7 @@ flowchart LR
 | 1.2 | 2026-05-21 | `rainflow.schema.json` 移除；manifest 为唯一 schema |
 | 1.3 | 2026-05-21 | 模块路径统一为 `src/common/status` |
 | 1.4 | 2026-05-21 | 同步 M1–M5b 完成态、CI、迭代 1–3 结案、当前冲刺 M6；§2 基线重写；路线图 v1.5 |
+| 1.5 | 2026-05-21 | M6：`host/`、`host-runtime.md`、stdio 退出码、HTTP `--serve`、`stdio_stress.ps1` |
 
 ---
 
