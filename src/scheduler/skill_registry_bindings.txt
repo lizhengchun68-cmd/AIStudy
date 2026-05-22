@@ -1,0 +1,3 @@
+# skill_id list (one per line)
+rainflow
+host_echo

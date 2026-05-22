@@ -4,6 +4,7 @@ add_executable(aistudy_tests
     skill_payload_validator_test.cpp
     skill_registry_test.cpp
     skill_host_health_test.cpp
+    host_echo_contract_test.cpp
 )
 
 

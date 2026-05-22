@@ -1,3 +1,6 @@
+include(${CMAKE_SOURCE_DIR}/cmake/AistudySkills.cmake)
+aistudy_verify_skill_registry(${CMAKE_SOURCE_DIR})
+
 add_library(scheduler STATIC
     Dispatcher.cpp
     Dispatcher.h

@@ -11,7 +11,7 @@ TEST(SkillHostHealth, HealthReportsRainflowLoaded) {
     auto health = aistudy_test::parseJsonObject(dispatcher.healthJson());
     EXPECT_EQ(health->getValue<std::string>("protocol"), "1");
     EXPECT_TRUE(health->getValue<bool>("ok"));
-    EXPECT_GE(health->getValue<int>("skills_loaded"), 1);
+    EXPECT_GE(health->getValue<int>("skills_loaded"), 2);
     EXPECT_TRUE(health->has("checks"));
     auto checks = health->getObject("checks");
     ASSERT_TRUE(checks);

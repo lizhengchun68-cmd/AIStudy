@@ -1,0 +1,7 @@
+{
+  "protocol": "1",
+  "skill_id": "host_echo",
+  "payload": {
+    "message": "hello"
+  }
+}

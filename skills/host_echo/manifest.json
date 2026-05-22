@@ -1,0 +1,33 @@
+{
+  "id": "host_echo",
+  "version": "1.0.0",
+  "title": "HostEcho",
+  "description": "回显 message，用于多 Skill 路由与契约回归样板",
+  "tags": ["host", "smoke"],
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "message": {
+        "type": "string",
+        "description": "待回显文本"
+      }
+    },
+    "required": ["message"]
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "message": { "type": "string" },
+      "length": { "type": "integer" }
+    }
+  },
+  "examples": [
+    {
+      "name": "hello",
+      "input": { "message": "hello" }
+    }
+  ],
+  "timeout_ms": 5000,
+  "deprecated": false
+}

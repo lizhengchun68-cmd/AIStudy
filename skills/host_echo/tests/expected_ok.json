@@ -1,0 +1,12 @@
+{
+  "protocol": "1",
+  "ok": true,
+  "result": {
+    "message": "hello",
+    "length": 5
+  },
+  "meta": {
+    "skill_id": "host_echo",
+    "skill_version": "1.0.0"
+  }
+}

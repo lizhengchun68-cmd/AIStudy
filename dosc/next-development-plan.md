@@ -48,7 +48,7 @@
 | `health` | 路线图 §4.4 | CLI `--health` JSON（`skills_loaded`、`checks`） | ✅ M3 |
 | `context` / `options` | 协议预留 | **未解析** | FEM 多步前需设计 |
 | 注册失败策略 | manifest 缺失应可见 | 失败记入 `load_errors` + 日志/stderr | ✅ 已实现 |
-| Skill 扩展 | 自动发现 / 代码生成 | 手工维护 `kBindings[]` | Skill 增多后易漏注册 |
+| Skill 扩展 | 自动发现 / 代码生成 | `kBindings` + `skill_registry_bindings.txt`；CMake 校验与 `skills/` 一致；样板 `host_echo` | 全量 codegen 仍待 M4+ |
 | FEM 领域 Skill | 网格/求解/结果 | 仅 rainflow 练习模块 | 产品主线未启动 |
 
 ### 2.3 技术债（建议纳入近期清理）
@@ -150,10 +150,10 @@ flowchart LR
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| 《新增 Skill 检查清单》 | `dosc/add-skill-checklist.md`：manifest → kernel → adapter → registry → tests | 团队可按清单新增第二个练习 Skill |
-| 注册表生成（可选） | CMake 扫描 `skills/*/manifest.json` 生成 `skill_registry.generated.cpp` 或校验 `kBindings` 与目录一致 | 存在 manifest 无 binding 时配置失败 |
-| 第二个样板 Skill（可选） | 极简 `echo` 或 `version` Skill，验证多 Skill 列表与路由 | `--list` 返回 ≥2 项 |
-| MCP 对齐说明 | 文档映射：`skill_id` ↔ Tool name，`describe` ↔ parameters schema | 便于 Cursor Agent 配置 |
+| 《新增 Skill 检查清单》 | `dosc/add-skill-checklist.md`：manifest → kernel → adapter → registry → tests | ✅ |
+| 注册表校验 | `cmake/AistudySkills.cmake` + `skill_registry_bindings.txt` | ✅ manifest 与 binding 不一致时 configure 失败 |
+| 第二个样板 Skill | `host_echo` + adapter + 契约测试 | ✅ `--list` ≥2；GTest `HostEchoContract` / `ListIncludesAtLeastTwoSkills` |
+| MCP 对齐说明 | `dosc/mcp-tool-alignment.md` | ✅ skill_id ↔ Tool、describe ↔ schema |
 
 **依赖：** M2 清单模板。  
 **工作量：** 中。

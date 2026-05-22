@@ -1,4 +1,6 @@
 add_library(adapter STATIC
+    host_echo_adapter.cpp
+    host_echo_adapter.h
     rainflow_adapter.cpp
     rainflow_adapter.h
 )
