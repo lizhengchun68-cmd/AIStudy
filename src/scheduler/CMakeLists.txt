@@ -12,6 +12,11 @@ add_library(scheduler STATIC
     skill_payload_validator.h
     skill_registry.cpp
     skill_registry.h
+    skill_context_types.h
+    context_handle_rules.cpp
+    context_handle_rules.h
+    skill_context_store.cpp
+    skill_context_store.h
 )
 
 target_include_directories(scheduler

@@ -50,6 +50,7 @@
 
 - [ ] 若 Agent 暴露为 MCP Tool：更新 `dosc/mcp-tool-alignment.md` 映射表
 - [ ] 复杂 payload 在 manifest `description` / `examples` 中写清
+- [ ] FEM 有状态 Skill：遵循 `dosc/context-and-handles-design.md`（句柄 `mesh_`/`result_`/`file_`）
 
 ## 参考样板
 

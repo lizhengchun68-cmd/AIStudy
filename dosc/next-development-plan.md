@@ -46,7 +46,7 @@
 | 契约测试 | 每 Skill `tests/*.json` + GTest | rainflow：`request_ok`、enum/未知字段/空数组负例 + `skill_registry_test`（manifest 缺失/非法） | 其它 Skill 待补 golden；无远程 CI 时以本地 `ctest` 为门禁 |
 | 结构化日志 | `request_id` + `skill_id` + `duration_ms` | `AIstudy.Dispatcher` 入口/出口日志；可 grep `request_id` | ✅ M3 |
 | `health` | 路线图 §4.4 | CLI `--health` JSON（`skills_loaded`、`checks`） | ✅ M3 |
-| `context` / `options` | 协议预留 | **未解析** | FEM 多步前需设计 |
+| `context` / `options` | 协议预留 | `options.timeout_ms` 已解析（M3）；`context` **M5a 设计+句柄校验**，M5b Store/信封解析 | FEM 多步见 `context-and-handles-design.md` |
 | 注册失败策略 | manifest 缺失应可见 | 失败记入 `load_errors` + 日志/stderr | ✅ 已实现 |
 | Skill 扩展 | 自动发现 / 代码生成 | `kBindings` + `skill_registry_bindings.txt`；CMake 校验与 `skills/` 一致；样板 `host_echo` | 全量 codegen 仍待 M4+ |
 | FEM 领域 Skill | 网格/求解/结果 | 仅 rainflow 练习模块 | 产品主线未启动 |
@@ -162,18 +162,43 @@ flowchart LR
 
 ### M5：FEM 会话与句柄（P1，仿真主线）
 
-**目标：** 为「导入网格 → 求解 → 导出」多步流程奠定调度层能力；rainflow 保持无状态。
+**目标：** 为「导入网格 → 求解 → 导出」多步流程奠定调度层能力；rainflow / host_echo 保持无状态。
+
+**依赖：** M1、M2；HDF5（`common/io/hdf5`）用于 M5b artifact。  
+**工作量：** 大；拆为 **M5a（设计+约定）**、**M5b（最小实现）**。
+
+---
+
+#### M5a：Context / 句柄设计基线（P1）
+
+**目标：** 评审通过的设计与可测试的句柄约定；**不改变** `Dispatcher::execute` 与现有 Skill 行为。
 
 | 任务 | 交付物 | 验收 |
 |------|--------|------|
-| Context 设计文档 | `dosc/context-and-handles-design.md`：`context_id`、`handles` 生命周期、与 HDF5 artifact 关系 | 评审通过后再写代码 |
-| 解析 `context` | `skill_protocol` + `SkillEnvelope` 增加 `context` 对象（可选） | v1 信封可带 `context`，未带时行为不变 |
-| Context Store（内存版） | scheduler 内 `context_id → map<handle_id, ArtifactMeta>` | 两次 `execute` 传递同一 `context_id` 可复用句柄 |
-| 句柄类型约定 | 字符串 ID 规范：`mesh_*`、`result_*`、`file_*`；禁止指针出进程 | 符合 `fem-simulation-architecture.mdc` |
-| 首个 FEM 向 Skill（选型） | 建议优先：**网格导入** 或 **结果写 HDF5**，而非直接上求解器 | 完成 1 个端到端 manifest + adapter + kernel 骨架 |
+| 设计文档 | `dosc/context-and-handles-design.md`：信封 `context` JSON、`context_id`、句柄生命周期、HDF5 `artifact://`、M5b 接口 | ✅ |
+| 类型与约定代码 | `skill_context_types.h`、`context_handle_rules.*` | ✅ `isValidHandleId` / `parseContextObject` |
+| Store 接口声明 | `skill_context_store.h` + M5a 占位 stub（返回未实现） | ✅ M5b 填充实现 |
+| 单元测试 | `context_handle_rules_test` | ✅ GTest 合法/非法 handle、context 解析 |
+| 协议文档索引 | 设计文档 §2 与 `skill-protocol-v1` 对齐说明 | ✅ |
 
-**依赖：** M1、M2；HDF5 模块（`common/io/hdf5`）用于 artifact。  
-**工作量：** 大（可分 M5a 设计 / M5b 最小实现）。
+**明确不在 M5a：** 信封 `context` 写入 `SkillEnvelope`、Dispatcher 调 Store、adapter 签名变更、FEM Skill。
+
+---
+
+#### M5b：Context Store 与首个 FEM Skill 骨架（P1）
+
+**目标：** 同一 `context_id` 跨两次 `execute` 可注册/查询句柄；可选极简 `mesh_import` 样板。
+
+| 任务 | 交付物 | 验收 |
+|------|--------|------|
+| 解析 `context` | `skill_protocol`：`SkillEnvelope` 增加 `context_id`、`inbound_handles`；`parseSkillEnvelope` 调 `parseContextObject` | 带/不带 `context` 行为可测 |
+| Context Store 实现 | `skill_context_store.cpp`：`ensureContext` / `put` / `get` / `mergeInbound` | `context_store_test` 同 context 两次 put/get |
+| Dispatcher 集成 | `execute` 入口 merge inbound；日志 `context_id=` | rainflow 无 context 回归通过 |
+| 句柄错误 message | 校验失败走 `messageOverride`（字段路径） | 与 M2 一致 |
+| 首个 FEM Skill | `mesh_import`（或 `artifact_register`）manifest + adapter stub + kernel 占位 | `--list` ≥3；契约 `request_ok` |
+| artifact 目录 | `.aistudy/artifacts/<context_id>/` 约定落地 | 设计 §6 |
+
+**迭代 3 验收（M5 整体）：** 文档化两步流（注册 `file_` → 产出 `mesh_`）无需在 payload 重复传大对象。
 
 ---
 
@@ -228,11 +253,11 @@ flowchart LR
 
 ### 迭代 3：仿真主线启动
 
-1. **M5a** Context/句柄设计评审  
-2. **M5b** Context Store 最小实现 + 解析 `context`  
-3. 选定 **第一个 FEM Skill**（网格或结果 IO），走完整 kernel → adapter → manifest 流程  
+1. **M5a** ✅ 设计文档 + 句柄规则 GTest（本迭代先完成）  
+2. **M5b** Context Store + 信封 `context` + Dispatcher + `mesh_import` 骨架  
+3. 本地 `ctest` 扩展 `context_store_test`、FEM 契约目录  
 
-**迭代 3 验收：** 文档化的两步工作流（如「导入 → 查询句柄」）无需在 payload 重复传大对象。
+**迭代 3 验收：** 文档化的两步工作流（如「导入 → 查询句柄」）无需在 payload 重复传大对象（M5b 结束时满足）。
 
 ---
 

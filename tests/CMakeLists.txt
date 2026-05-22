@@ -5,6 +5,7 @@ add_executable(aistudy_tests
     skill_registry_test.cpp
     skill_host_health_test.cpp
     host_echo_contract_test.cpp
+    context_handle_rules_test.cpp
 )
 
 
